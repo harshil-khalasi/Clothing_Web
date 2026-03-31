@@ -74,7 +74,7 @@ const Navbar = () => {
           <div className="flex items-center gap-6 text-sm">
 
             {/* Profile */}
-            <Link className="flex flex-col items-center text-gray-700 hover:text-pink-600">
+            <Link to="/profile" className="flex flex-col items-center text-gray-700 hover:text-pink-600">
               <User size={20} />
               <span className="text-xs">Profile</span>
             </Link>

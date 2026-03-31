@@ -20,8 +20,21 @@ export const upload = multer({
 // @route   GET /api/products
 export const getAllProducts = async (req, res, next) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
-    res.status(200).json(products);
+    const isAdmin = req.query.admin === 'true';
+    let query = {};
+
+    if (!isAdmin) {
+      query.status = 'active';
+    }
+
+    const products = await Product.find(query).sort({ createdAt: -1 });
+
+    // Filter products that have at least one size in stock for users
+    const filteredProducts = isAdmin 
+      ? products 
+      : products.filter(p => p.sizeStock.some(s => s.stock > 0));
+
+    res.status(200).json(filteredProducts);
   } catch (error) {
     next(error);
   }
@@ -46,7 +59,7 @@ export const getProductById = async (req, res, next) => {
 // @access  Private/Admin
 export const createProduct = async (req, res, next) => {
   try {
-    const { name, price, description, category, stock, brand, sizes, colors, status } = req.body;
+    const { name, price, description, category, brand, sizeStock, colors, status } = req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({ message: 'Name, price, and category are required' });
@@ -71,11 +84,10 @@ export const createProduct = async (req, res, next) => {
       category,
       brand,
       status: status || 'active',
-      sizes: sizes ? JSON.parse(sizes) : [],
+      sizeStock: sizeStock ? JSON.parse(sizeStock) : [],
       colors: colors ? JSON.parse(colors) : [],
       image: imageUrls[0] || '', // Use first image as thumbnail
       images: imageUrls,
-      stock: parseInt(stock) || 0,
     });
 
     res.status(201).json({ success: true, data: product });
@@ -94,7 +106,7 @@ export const updateProduct = async (req, res, next) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const { name, price, description, category, stock, brand, sizes, colors, status } = req.body;
+    const { name, price, description, category, brand, sizeStock, colors, status } = req.body;
 
     if (req.files && req.files.length > 0) {
       try {
@@ -112,10 +124,9 @@ export const updateProduct = async (req, res, next) => {
     if (price) product.price = parseFloat(price);
     if (description) product.description = description;
     if (category) product.category = category;
-    if (stock) product.stock = parseInt(stock);
     if (brand) product.brand = brand;
     if (status) product.status = status;
-    if (sizes) product.sizes = JSON.parse(sizes);
+    if (sizeStock) product.sizeStock = JSON.parse(sizeStock);
     if (colors) product.colors = JSON.parse(colors);
 
     const updatedProduct = await product.save();

@@ -11,11 +11,9 @@ const ProductList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [categories, setCategories] = useState(['All']);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const categories = ['All', 'Men', 'Women', 'Kids'];
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -24,6 +22,10 @@ const ProductList = () => {
         setProducts(data);
         setFilteredProducts(data);
         
+        // Dynamically get unique categories
+        const uniqueCats = ['All', ...new Set(data.map(p => p.category))];
+        setCategories(uniqueCats);
+
         // Handle URL params
         const categoryParam = searchParams.get('category');
         if (categoryParam) setSelectedCategory(categoryParam);

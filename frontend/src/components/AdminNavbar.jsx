@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, PlusCircle, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, PlusCircle, User, LogOut, ClipboardList } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getDashboardStats } from '../services/api';
 import logo from '../assets/logo.png';
 
 const AdminNavbar = () => {
@@ -11,6 +12,8 @@ const AdminNavbar = () => {
   const navLinks = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Products', path: '/admin/products', icon: ShoppingBag },
+    { name: 'Orders', path: '/admin/orders', icon: ClipboardList },
+    { name: 'Users', path: '/admin/users', icon: User },
   ];
 
   return (

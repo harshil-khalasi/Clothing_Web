@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { User, Phone, MapPin, ShoppingBag, ArrowRight, MessageSquare, ShieldCheck, ShoppingCart, Loader2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { createOrder } from '../services/api';
+import toast from 'react-hot-toast';
 
 const Checkout = () => {
   const { cartItems, totalAmount, clearCart } = useCart();
@@ -22,18 +24,38 @@ const Checkout = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePlaceOrder = (e) => {
+  const handlePlaceOrder = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const orderItems = cartItems
-  .map(
-    (item) =>
-      `- ${item.name} (Size: ${item.selectedSize}) x ${item.qty} = ₹${item.price * item.qty}`
-  )
-  .join('\n');
+    try {
+      // 1. Save order to Backend
+      const orderData = {
+        orderItems: cartItems.map(item => ({
+          name: item.name,
+          qty: item.qty,
+          image: item.image,
+          price: item.price,
+          product: item._id,
+          selectedSize: item.selectedSize,
+        })),
+        shippingAddress: formData.address,
+        phoneNumber: formData.phone,
+        totalPrice: totalAmount,
+      };
 
-    const message = `Hello, I want to place an order:
+      await createOrder(orderData);
+      toast.success('Order placed successfully!');
+
+      // 2. Prepare WhatsApp Message
+      const orderItemsHeader = cartItems
+        .map(
+          (item) =>
+            `- ${item.name} (Size: ${item.selectedSize || 'N/A'}) x ${item.qty} = ₹${item.price * item.qty}`
+        )
+        .join('\n');
+
+      const message = `Hello, I want to place an order:
 
 Customer Details:
 Name: ${formData.name}
@@ -41,20 +63,23 @@ Phone: ${formData.phone}
 Address: ${formData.address}
 
 Order Items:
-${orderItems}
+${orderItemsHeader}
 
 Total Amount: ₹${totalAmount}`;
 
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${ADMIN_PHONE}?text=${encodedMessage}`;
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/${ADMIN_PHONE}?text=${encodedMessage}`;
 
-    // Simulate small delay
-    setTimeout(() => {
+      // 3. Redirect and Cleanup
       window.open(whatsappUrl, '_blank');
       clearCart();
       setLoading(false);
       navigate('/');
-    }, 1500);
+    } catch (error) {
+      console.error('Order Error:', error);
+      toast.error(error.message || 'Failed to place order.');
+      setLoading(false);
+    }
   };
 
   if (cartItems.length === 0) {

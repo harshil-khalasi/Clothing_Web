@@ -50,10 +50,9 @@ const AdminProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [categories, setCategories] = useState(['All']);
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [editingProduct, setEditingProduct] = useState(null);
-
-  const categories = ['All', ...DEFAULT_CATEGORIES];
 
   useEffect(() => { fetchProducts(); }, []);
 
@@ -62,6 +61,10 @@ const AdminProducts = () => {
       setLoading(true);
       const data = await getAllProducts();
       setProducts(data);
+      
+      // Dynamic categories
+      const uniqueCats = ['All', ...new Set(data.map(p => p.category))];
+      setCategories(uniqueCats);
     } catch (err) {
       console.error('Error fetching products:', err);
     } finally {
@@ -164,14 +167,12 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
     brand: product.brand || '',
     category: product.category || '',
     description: product.description || '',
-    stock: product.stock || '',
     status: product.status || 'active',
   });
 
+  const [sizeStock, setSizeStock] = useState(product.sizeStock || []);
+  
   // ── Images: existing (URLs) + new (Files) ──
-  // existingImages: array of URL strings already on server
-  // newFiles: array of { file, previewUrl } for newly uploaded images
-  // removedExisting: set of URLs the user marked for removal
   const [existingImages, setExistingImages] = useState(
     Array.isArray(product.images) ? product.images : product.image ? [product.image] : []
   );
@@ -179,8 +180,6 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
   const [newFiles, setNewFiles] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // ── Sizes & Colors ──
-  const [selectedSizes, setSelectedSizes] = useState(product.sizes || []);
   const [selectedColors, setSelectedColors] = useState(product.colors || []);
   const [customColor, setCustomColor] = useState('');
   const [colorOptions, setColorOptions] = useState(COLOR_OPTIONS);
@@ -219,12 +218,26 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (name === 'category') setSelectedSizes([]);
+    if (name === 'category') setSizeStock([]);
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const toggleSize = (size) =>
-    setSelectedSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]);
+  const toggleSize = (size) => {
+    setSizeStock(prev => {
+      const exists = prev.find(s => s.size === size);
+      if (exists) {
+        return prev.filter(s => s.size !== size);
+      } else {
+        return [...prev, { size, stock: 0 }];
+      }
+    });
+  };
+
+  const handleSizeStockChange = (size, value) => {
+    setSizeStock(prev => prev.map(s => 
+      s.size === size ? { ...s, stock: parseInt(value) || 0 } : s
+    ));
+  };
 
   const toggleColor = (color) =>
     setSelectedColors(prev => prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]);
@@ -276,7 +289,7 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
     const e = {};
     if (!formData.name.trim()) e.name = 'Product name is required';
     if (!formData.price || isNaN(parseFloat(formData.price))) e.price = 'Valid price is required';
-    if (!formData.stock && formData.stock !== 0) e.stock = 'Stock is required';
+    if (sizeStock.length === 0) e.stock = 'At least one size with stock is required';
     if (!formData.category) e.category = 'Category is required';
     if (!formData.description.trim()) e.description = 'Description is required';
     if (allPreviews.length === 0) e.images = 'At least one image is required';
@@ -297,9 +310,8 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
     data.append('brand', formData.brand.trim());
     data.append('category', formData.category);
     data.append('description', formData.description.trim());
-    data.append('stock', parseInt(formData.stock));
     data.append('status', formData.status);
-    data.append('sizes', JSON.stringify(selectedSizes));
+    data.append('sizeStock', JSON.stringify(sizeStock));
     data.append('colors', JSON.stringify(selectedColors));
     // Tell backend which existing images to keep
     data.append('existingImages', JSON.stringify(activeExisting));
@@ -542,20 +554,34 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
                   {formData.category && sizeType !== 'none' && sizesToShow.length > 0 && (
                     <div className="space-y-3 pt-4 border-t border-gray-100">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Available Sizes</span>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Available Sizes & Stock</span>
                         <span className="text-[10px] font-black text-pink-600 bg-pink-50 px-3 py-1 rounded-full border border-pink-100">
-                          {selectedSizes.length} selected
+                          {sizeStock.length} selected
                         </span>
                       </div>
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                        {sizesToShow.map(size => (
-                          <button key={size} type="button" onClick={() => toggleSize(size)}
-                            className={`h-12 flex items-center justify-center rounded-xl border-2 font-black text-sm transition-all duration-300 ${
-                              selectedSizes.includes(size)
-                                ? 'border-pink-600 bg-pink-600 text-white shadow-lg shadow-pink-200'
-                                : 'border-gray-100 bg-white text-gray-400 hover:border-pink-200 hover:text-pink-600'
-                            }`}>{size}</button>
-                        ))}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {sizesToShow.map(size => {
+                          const itemData = sizeStock.find(s => s.size === size);
+                          const isSelected = !!itemData;
+                          return (
+                            <div key={size} className={`flex flex-col gap-2 p-2 rounded-xl border-2 transition-all ${isSelected ? 'border-pink-600 bg-pink-50/20' : 'border-gray-50 bg-white opacity-60'}`}>
+                              <button type="button" onClick={() => toggleSize(size)}
+                                className={`h-10 flex items-center justify-center rounded-lg border-2 font-black text-xs transition-all duration-300 ${
+                                  isSelected ? 'border-pink-600 bg-pink-600 text-white' : 'border-gray-100 bg-white text-gray-400'
+                                }`}>{size}</button>
+                              {isSelected && (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={itemData.stock}
+                                  onChange={(e) => handleSizeStockChange(size, e.target.value)}
+                                  className="w-full bg-white border border-pink-100 rounded-lg py-1.5 px-2 text-xs font-bold text-gray-900 focus:outline-none focus:border-pink-500"
+                                  placeholder="Qty"
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -703,29 +729,33 @@ const AdminProductCard = ({ product, onEdit, onDelete }) => (
       </div>
 
       {/* SIZES */}
-{product.sizes && product.sizes.length > 0 && (
+{product.sizeStock && product.sizeStock.length > 0 && (
   <div className="flex flex-wrap gap-1">
-    {product.sizes.map((size) => (
+    {product.sizeStock.map((item) => (
       <span
-        key={size}
-        className="text-[10px] px-2 py-1 bg-gray-100 text-gray-600 rounded-md"
+        key={item.size}
+        className={`text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight border ${
+          item.stock > 0 
+            ? 'bg-pink-50 text-pink-600 border-pink-100' 
+            : 'bg-gray-50 text-gray-300 border-gray-100'
+        }`}
       >
-        {size}
+        {item.size}: {item.stock}
       </span>
     ))}
   </div>
 )}
 
       {/* PRICE + STOCK */}
-      <div className="flex justify-between items-center border-t pt-3">
-        <span className="text-lg font-bold text-gray-900">
+      <div className="flex justify-between items-center border-t border-gray-50 pt-3">
+        <span className="text-base font-black text-gray-900">
           ₹{product.price?.toLocaleString()}
         </span>
 
-        <span className={`text-xs font-medium ${
-          product.stock > 0 ? 'text-green-600' : 'text-red-500'
+        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md border ${
+          product.totalStock > 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'
         }`}>
-          {product.stock > 0 ? `${product.stock} left` : 'Out'}
+          {product.totalStock > 0 ? `${product.totalStock} Units` : 'Sold Out'}
         </span>
       </div>
 

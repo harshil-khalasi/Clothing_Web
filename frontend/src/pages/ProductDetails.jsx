@@ -14,6 +14,8 @@ const ProductDetails = () => {
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [selectedSize, setSelectedSize] = useState(null);
+  const selectedSizeData = product?.sizeStock?.find(s => s.size === selectedSize);
+  const maxStock = selectedSizeData ? selectedSizeData.stock : 0;
   
   const { addToCart } = useCart();
 
@@ -22,6 +24,8 @@ const ProductDetails = () => {
       try {
         const data = await getProductById(id);
         setProduct(data);
+        const availableSize = data.sizeStock?.find(s => s.stock > 0);
+        if (availableSize) setSelectedSize(availableSize.size);
       } catch (err) {
         console.error('Error fetching product:', err);
       } finally {
@@ -31,21 +35,26 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id]);
 
+  useEffect(() => {
+    if (qty > maxStock && maxStock > 0) {
+      setQty(maxStock);
+    }
+  }, [selectedSize, maxStock, qty]);
+
   const handleAddToCart = () => {
-    
-if (product.sizes?.length > 0 && !selectedSize) {
-  alert("Please select size");
-  return;
-}
+    if (product.sizeStock?.length > 0 && !selectedSize) {
+      alert("Please select size");
+      return;
+    }
 
-const finalQty = Math.min(qty, product.stock);
+    if (maxStock === 0) {
+      alert("Selected size is out of stock");
+      return;
+    }
 
-for (let i = 0; i < finalQty; i++) {
-  addToCart({
-    ...product,
-    selectedSize,
-  });
-}
+    for (let i = 0; i < qty; i++) {
+      addToCart(product, selectedSize);
+    }
   };
 
   if (loading) return (
@@ -114,26 +123,36 @@ for (let i = 0; i < finalQty; i++) {
 
               <div className="h-px bg-gray-100 w-full mb-8"></div>
 
-              {/* 🔥 SIZE SELECTION */}
-{product?.sizes && product.sizes.length > 0 && (
+              {product?.sizeStock && product.sizeStock.length > 0 && (
   <div className="mb-10">
-    <label className="block text-sm font-semibold text-gray-900 mb-4">
-      Select Size
-    </label>
+    <div className="flex items-center justify-between mb-4">
+      <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">
+        Select Size
+      </label>
+      {selectedSizeData && (
+        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${maxStock > 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+          {maxStock > 0 ? `${maxStock} Available` : 'Sold Out'}
+        </span>
+      )}
+    </div>
 
     <div className="flex gap-3 flex-wrap">
-      {product.sizes.map((size) => (
+      {product.sizeStock.map((item) => (
         <button
-          key={size}
-          onClick={() => setSelectedSize(size)}
-          className={`px-5 py-2 rounded-xl border text-sm font-medium transition-all
+          key={item.size}
+          onClick={() => item.stock > 0 && setSelectedSize(item.size)}
+          disabled={item.stock === 0}
+          className={`w-14 h-14 rounded-2xl border-2 text-sm font-black transition-all flex items-center justify-center relative
             ${
-              selectedSize === size
-                ? "bg-pink-600 text-white border-pink-600"
-                : "bg-white text-gray-700 border-gray-300 hover:border-pink-400"
+              selectedSize === item.size
+                ? "bg-pink-600 text-white border-pink-600 shadow-lg shadow-pink-100 scale-105"
+                : item.stock > 0
+                ? "bg-white text-gray-900 border-gray-100 hover:border-pink-400"
+                : "bg-gray-50 text-gray-300 border-gray-50 cursor-not-allowed opacity-50 overflow-hidden"
             }`}
         >
-          {size}
+          {item.size}
+          {item.stock === 0 && <span className="absolute w-full h-[1px] bg-gray-300 rotate-45" />}
         </button>
       ))}
     </div>
@@ -141,61 +160,48 @@ for (let i = 0; i < finalQty; i++) {
 )}
               {/* Quantity */}
               <div className="mb-10">
-                <label className="block text-sm font-black text-gray-900 uppercase tracking-widest mb-4">Select Quantity</label>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Select Quantity</label>
                 <div className="flex items-center gap-6">
-                  <div className="flex items-center bg-gray-50 rounded-2xl p-2 border border-gray-200">
+                  <div className="flex items-center bg-gray-50 rounded-3xl p-2 border border-gray-100 shadow-inner">
                     <button 
-                      onClick={() => {
-    if (qty > 1) {
-      setQty(qty - 1);
-    }
-  }}
-  disabled={qty <= 1}
-  className={`w-12 h-12 flex items-center justify-center rounded-xl bg-white 
-  text-gray-900 shadow-sm transition-all 
-  ${qty <= 1 ? "opacity-40 cursor-not-allowed" : "hover:text-pink-600"}`}
->
-  <Minus size={20} />
+                      onClick={() => qty > 1 && setQty(qty - 1)}
+                      disabled={qty <= 1}
+                      className={`w-12 h-12 flex items-center justify-center rounded-2xl bg-white shadow-sm border border-gray-100 transition-all active:scale-90
+                      ${qty <= 1 ? "opacity-30 cursor-not-allowed" : "hover:text-pink-600 hover:border-pink-100 font-bold"}`}
+                    >
+                      <Minus size={18} />
                     </button>
-                    <span className="w-16 text-center font-black text-xl text-gray-900">{qty}</span>
+                    <span className="w-16 text-center font-black text-2xl text-gray-900">{qty}</span>
                     <button 
-                      onClick={() => {
-    if (qty < product.stock) {
-      setQty(qty + 1);
-    }
-  }}
-  disabled={qty >= product.stock}
-  className={`w-12 h-12 flex items-center justify-center rounded-xl bg-white 
-  text-gray-900 shadow-sm transition-all 
-  ${qty >= product.stock ? "opacity-40 cursor-not-allowed" : "hover:text-pink-600"}`}
->
-  <Plus size={20} />
+                      onClick={() => qty < maxStock && setQty(qty + 1)}
+                      disabled={qty >= maxStock || maxStock === 0}
+                      className={`w-12 h-12 flex items-center justify-center rounded-2xl bg-white shadow-sm border border-gray-100 transition-all active:scale-90
+                      ${(qty >= maxStock || maxStock === 0) ? "opacity-30 cursor-not-allowed" : "hover:text-pink-600 hover:border-pink-100 font-bold"}`}
+                    >
+                      <Plus size={18} />
                     </button>
                   </div>
-                  <span className="text-sm font-bold text-gray-500">
-                    {product.stock} items left in stock
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Status</span>
+                    <span className={`text-sm font-black mt-1 ${maxStock > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {maxStock > 0 ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  </div>
                 </div>
               </div>
-
-              {qty === product.stock && (
-  <p className="text-xs text-red-500 font-medium mt-2">
-    Maximum stock reached
-  </p>
-)}
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
                 <button 
                   onClick={handleAddToCart}
-                  disabled={product.stock === 0}
-                  className="flex-grow bg-gray-900 text-white font-black py-5 rounded-[20px] flex items-center justify-center gap-3 hover:bg-gray-800 transition-all active:scale-95 shadow-xl shadow-gray-200 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest"
+                  disabled={maxStock === 0 || !selectedSize}
+                  className="flex-grow bg-gray-900 text-white font-black py-5 rounded-[24px] flex items-center justify-center gap-3 hover:bg-gray-800 transition-all active:scale-[0.98] shadow-2xl shadow-gray-200 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-xs"
                 >
-                  <ShoppingCart size={22} strokeWidth={2.5} />
-                  Add to Cart
+                  <ShoppingCart size={20} strokeWidth={2.5} />
+                  Add to Bag
                 </button>
                 <button 
-                  className="flex-grow bg-pink-600 text-white font-black py-5 rounded-[20px] flex items-center justify-center gap-3 hover:bg-pink-700 transition-all active:scale-95 shadow-xl shadow-pink-200 uppercase tracking-widest"
+                  className="flex-grow bg-pink-600 text-white font-black py-5 rounded-[24px] flex items-center justify-center gap-3 hover:bg-pink-700 transition-all active:scale-[0.98] shadow-2xl shadow-pink-200 uppercase tracking-widest text-xs"
                 >
                   Buy it Now
                 </button>

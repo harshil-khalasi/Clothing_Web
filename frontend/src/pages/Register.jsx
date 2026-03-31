@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, Loader2, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -33,13 +34,15 @@ const Register = () => {
 
     setLoading(true);
     try {
-      await register({
+      const user = await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
       });
+      toast.success(`Welcome to My Wearables, ${user.name}!`);
       navigate('/');
     } catch (err) {
+      toast.error(err.message || 'Registration failed');
       setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);

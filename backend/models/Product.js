@@ -28,23 +28,19 @@ const productSchema = new mongoose.Schema(
       type: [String], // Multiple images
       default: [],
     },
-    sizes: {
-      type: [String],
-      default: [],
-    },
-    colors: {
-      type: [String],
-      default: [],
-    },
     brand: {
       type: String,
       trim: true,
     },
-    stock: {
-      type: Number,
-      required: [true, 'Stock is required'],
-      min: [0, 'Stock cannot be negative'],
-      default: 0,
+    sizeStock: [
+      {
+        size: { type: String, required: true },
+        stock: { type: Number, required: true, default: 0 },
+      },
+    ],
+    colors: {
+      type: [String],
+      default: [],
     },
     status: {
       type: String,
@@ -52,7 +48,15 @@ const productSchema = new mongoose.Schema(
       default: 'active',
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+productSchema.virtual('totalStock').get(function () {
+  return this.sizeStock.reduce((acc, item) => acc + item.stock, 0);
+});
 
 export default mongoose.model('Product', productSchema);

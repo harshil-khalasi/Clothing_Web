@@ -3,6 +3,7 @@ import {
   loginUser,
   registerUser,
   getUserProfile,
+  updateUserProfile,
 } from '../controllers/authController.js';
 import {
   getUsers,

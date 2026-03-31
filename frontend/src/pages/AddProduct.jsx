@@ -40,9 +40,10 @@ const AddProduct = () => {
     brand: '',
     category: '',
     description: '',
-    stock: '',
     status: 'active',
   });
+
+  const [sizeStock, setSizeStock] = useState([]); // [{ size: 'S', stock: 0 }]
 
   const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [newCategory, setNewCategory] = useState('');
@@ -50,7 +51,6 @@ const AddProduct = () => {
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [showRemoveCategory, setShowRemoveCategory] = useState(false);
 
-  const [selectedSizes, setSelectedSizes] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
   const [customColor, setCustomColor] = useState('');
   const [colorOptions, setColorOptions] = useState(COLOR_OPTIONS);
@@ -67,7 +67,7 @@ const AddProduct = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    if (name === 'category') setSelectedSizes([]);
+    if (name === 'category') setSizeStock([]);
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
@@ -96,7 +96,7 @@ const AddProduct = () => {
     setCategories(prev => prev.filter(c => c !== cat));
     if (formData.category === cat) {
       setFormData(prev => ({ ...prev, category: '' }));
-      setSelectedSizes([]);
+      setSizeStock([]);
     }
     delete categoryTypeMap[cat];
   };
@@ -110,9 +110,20 @@ const AddProduct = () => {
   const sizesToShow = SIZE_OPTIONS[sizeType] || [];
 
   const toggleSize = (size) => {
-    setSelectedSizes(prev =>
-      prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
-    );
+    setSizeStock(prev => {
+      const exists = prev.find(s => s.size === size);
+      if (exists) {
+        return prev.filter(s => s.size !== size);
+      } else {
+        return [...prev, { size, stock: 0 }];
+      }
+    });
+  };
+
+  const handleSizeStockChange = (size, value) => {
+    setSizeStock(prev => prev.map(s => 
+      s.size === size ? { ...s, stock: parseInt(value) || 0 } : s
+    ));
   };
 
   const toggleColor = (color) => {
@@ -206,11 +217,8 @@ const AddProduct = () => {
       newErrors.price = 'Price must be a valid positive number';
     }
     
-    const stock = parseInt(formData.stock);
-    if (!formData.stock) {
-      newErrors.stock = 'Stock count is required';
-    } else if (isNaN(stock) || stock < 0) {
-      newErrors.stock = 'Stock must be a valid non-negative integer';
+    if (sizeStock.length === 0) {
+      newErrors.stock = 'At least one size with stock is required';
     }
     
     if (!formData.category) {
@@ -247,9 +255,8 @@ const AddProduct = () => {
       formDataToSend.append('brand', formData.brand.trim());
       formDataToSend.append('category', formData.category);
       formDataToSend.append('description', formData.description.trim());
-      formDataToSend.append('stock', parseInt(formData.stock));
       formDataToSend.append('status', formData.status);
-      formDataToSend.append('sizes', JSON.stringify(selectedSizes));
+      formDataToSend.append('sizeStock', JSON.stringify(sizeStock));
       formDataToSend.append('colors', JSON.stringify(selectedColors));
       
       for (const file of selectedFiles) {
@@ -267,12 +274,11 @@ const AddProduct = () => {
           brand: '',
           category: '',
           description: '',
-          stock: '',
           status: 'active',
         });
         setSelectedFiles([]);
         setPreviewUrls([]);
-        setSelectedSizes([]);
+        setSizeStock([]);
         setSelectedColors([]);
         setCurrentImageIndex(0);
         setErrors({});
@@ -378,17 +384,6 @@ const AddProduct = () => {
                   required
                 />
 
-                <FormField
-                  label="Stock Quantity"
-                  name="stock"
-                  type="number"
-                  placeholder="Units available"
-                  min="0"
-                  value={formData.stock}
-                  onChange={handleChange}
-                  error={errors.stock}
-                  required
-                />
 
                 <FormField
                   label="Brand Name"
@@ -558,27 +553,46 @@ const AddProduct = () => {
                 {formData.category && sizeType !== 'none' && sizesToShow.length > 0 && (
                   <div className="space-y-4 pt-6 border-t border-gray-200">
                     <div className="flex items-center justify-between">
-                      <label className="block text-xs font-black text-gray-600 uppercase tracking-wider">Available Sizes</label>
+                      <label className="block text-xs font-black text-gray-600 uppercase tracking-wider">Available Sizes & Stock</label>
                       <span className="text-xs font-bold text-pink-600 bg-pink-50 px-3 py-1 rounded-full border border-pink-200">
-                        {selectedSizes.length} selected
+                        {sizeStock.length} sizes active
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                      {sizesToShow.map(size => (
-                        <button
-                          key={size}
-                          type="button"
-                          onClick={() => toggleSize(size)}
-                          className={`py-3 px-2 rounded-lg border-2 font-bold text-sm transition-all duration-300 flex items-center justify-center ${
-                            selectedSizes.includes(size)
-                              ? 'border-pink-600 bg-pink-600 text-white shadow-lg shadow-pink-200'
-                              : 'border-gray-200 bg-white text-gray-600 hover:border-pink-300 hover:text-pink-600'
-                          }`}
-                        >
-                          {size}
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {sizesToShow.map(size => {
+                        const sizeData = sizeStock.find(s => s.size === size);
+                        const isSelected = !!sizeData;
+                        return (
+                          <div key={size} className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${isSelected ? 'border-pink-600 bg-pink-50/30 shadow-sm' : 'border-gray-100 bg-white opacity-60 hover:opacity-100'}`}>
+                            <button
+                              type="button"
+                              onClick={() => toggleSize(size)}
+                              className={`w-12 h-12 flex items-center justify-center rounded-lg border-2 font-bold text-sm transition-all ${isSelected ? 'bg-pink-600 border-pink-600 text-white' : 'bg-white border-gray-200 text-gray-500 hover:border-pink-300'}`}
+                            >
+                              {size}
+                            </button>
+                            {isSelected && (
+                              <div className="flex-1 flex items-center gap-2">
+                                <input
+                                  type="number"
+                                  placeholder="Qty"
+                                  min="0"
+                                  value={sizeData.stock}
+                                  onChange={(e) => handleSizeStockChange(size, e.target.value)}
+                                  className="w-full bg-white border border-pink-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                                />
+                                <span className="text-[10px] font-black text-pink-500 uppercase tracking-tighter">Stock</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
+                    {errors.stock && (
+                      <p className="text-xs font-bold text-red-500 flex items-center gap-1 mt-2">
+                        <AlertCircle size={14} /> {errors.stock}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

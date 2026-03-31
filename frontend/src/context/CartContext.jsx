@@ -3,32 +3,29 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([]);
-
-  // Load from localStorage on mount
-  useEffect(() => {
+  const [cartItems, setCartItems] = useState(() => {
     const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
-    }
-  }, []);
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
 
   // Save to localStorage on change
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (product) => {
+  const addToCart = (product, selectedSize) => {
     setCartItems((prevItems) => {
-      const itemExists = prevItems.find((item) => item._id === product._id);
+      const itemExists = prevItems.find(
+        (item) => item._id === product._id && item.selectedSize === selectedSize
+      );
       if (itemExists) {
         return prevItems.map((item) =>
-          item._id === product._id
+          item._id === product._id && item.selectedSize === selectedSize
             ? { ...item, qty: item.qty + 1 }
             : item
         );
       }
-      return [...prevItems, { ...product, qty: 1 }];
+      return [...prevItems, { ...product, selectedSize, qty: 1 }];
     });
   };
 

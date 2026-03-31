@@ -6,6 +6,7 @@ import Dashboard from '../pages/Dashboard';
 import Products from '../pages/Products';
 import AddProduct from '../pages/AddProduct';
 import AdminUsers from '../pages/AdminUsers';
+import AdminOrders from '../pages/AdminOrders';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Home from '../pages/Home';
@@ -13,6 +14,7 @@ import ProductList from '../pages/ProductList';
 import ProductDetails from '../pages/ProductDetails';
 import Cart from '../pages/Cart';
 import Checkout from '../pages/Checkout';
+import Profile from '../pages/Profile';
 import { useAuth } from '../context/AuthContext';
 
 // 🔐 Protected Route (Admin Only)
@@ -51,6 +53,7 @@ const AppRoutes = () => {
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<UserRoute><Checkout /></UserRoute>} />
+        <Route path="/profile" element={<UserRoute><Profile /></UserRoute>} />
       </Route>
 
       {/* 🔒 Protected Admin Routes */}
@@ -66,6 +69,7 @@ const AppRoutes = () => {
         <Route path="products" element={<Products />} />
         <Route path="add-product" element={<AddProduct />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="orders" element={<AdminOrders />} />
       </Route>
 
       {/* 🔁 Fallback */}

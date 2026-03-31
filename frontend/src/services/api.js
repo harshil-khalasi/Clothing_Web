@@ -53,14 +53,22 @@ export const getProfile = async () => {
   return response.data;
 };
 
+export const updateProfile = async (userData) => {
+  const response = await apiClient.put('/users/profile', userData);
+  if (response.data.token) {
+    localStorage.setItem('token', response.data.token);
+  }
+  return response.data;
+};
+
 export const logoutUser = () => {
   localStorage.removeItem('token');
 };
 
 // ============== PRODUCT API CALLS ==============
 
-export const getAllProducts = async () => {
-  const response = await apiClient.get('/products');
+export const getAllProducts = async (isAdmin = false) => {
+  const response = await apiClient.get(`/products${isAdmin ? '?admin=true' : ''}`);
   return response.data;
 };
 
@@ -104,6 +112,28 @@ export const deleteUser = async (id) => {
 
 export const getDashboardStats = async () => {
   const response = await apiClient.get('/dashboard/stats');
+  return response.data;
+};
+
+// ============== ORDER API CALLS ==============
+
+export const createOrder = async (orderData) => {
+  const response = await apiClient.post('/orders', orderData);
+  return response.data;
+};
+
+export const getMyOrders = async () => {
+  const response = await apiClient.get('/orders/myorders');
+  return response.data;
+};
+
+export const getOrders = async () => {
+  const response = await apiClient.get('/orders');
+  return response.data;
+};
+
+export const updateOrderStatus = async (id, status) => {
+  const response = await apiClient.put(`/orders/${id}/status`, { status });
   return response.data;
 };
 
