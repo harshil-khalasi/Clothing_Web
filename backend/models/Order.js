@@ -48,6 +48,18 @@ const orderSchema = new mongoose.Schema(
     deliveredAt: {
       type: Date,
     },
+    paymentResult: {
+      id: { type: String },
+      status: { type: String },
+      update_time: { type: String },
+      email_address: { type: String },
+    },
+    razorpayOrderId: {
+      type: String,
+    },
+    paidAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

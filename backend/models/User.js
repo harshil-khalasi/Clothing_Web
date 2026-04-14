@@ -43,6 +43,25 @@ const userSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+
+    cart: [
+      {
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        qty: {
+          type: Number,
+          required: true,
+          default: 1,
+        },
+        selectedSize: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

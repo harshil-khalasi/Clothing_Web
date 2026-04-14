@@ -6,10 +6,19 @@ import { useCart } from "../context/CartContext";
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
 
+  // SIZE
   const [selectedSize, setSelectedSize] = useState(() => {
     const available = product?.sizeStock?.find(s => s.stock > 0);
     return available ? available.size : "";
   });
+
+  // IMAGE SLIDER
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const images =
+    product?.images && product.images.length > 0
+      ? product.images
+      : [product.image || "/no-image.png"];
 
   return (
     <div
@@ -33,13 +42,57 @@ const ProductCard = ({ product }) => {
         </div>
       )}
 
-      {/* IMAGE */}
+      {/* IMAGE SLIDER */}
       <div className="relative w-full aspect-[3/4] bg-gray-50 flex items-center justify-center overflow-hidden group-hover:bg-white transition-colors duration-500">
+        
         <img
-          src={product.image || "/no-image.png"}
+          src={images[currentIndex]}
           alt={product.name}
-          className="w-full h-full object-contain p-6 group-hover:scale-110 transition-transform duration-700 ease-out"
+          className="w-full h-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
         />
+
+        {/* LEFT BUTTON */}
+        {images.length > 1 && (
+          <button
+            onClick={() =>
+              setCurrentIndex((prev) =>
+                prev === 0 ? images.length - 1 : prev - 1
+              )
+            }
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow hover:bg-pink-600 hover:text-white transition"
+          >
+            ‹
+          </button>
+        )}
+
+        {/* RIGHT BUTTON */}
+        {images.length > 1 && (
+          <button
+            onClick={() =>
+              setCurrentIndex((prev) =>
+                prev === images.length - 1 ? 0 : prev + 1
+              )
+            }
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow hover:bg-pink-600 hover:text-white transition"
+          >
+            ›
+          </button>
+        )}
+
+        {/* DOTS */}
+        {images.length > 1 && (
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {images.map((_, index) => (
+              <div
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-2 h-2 rounded-full cursor-pointer ${
+                  currentIndex === index ? "bg-pink-600" : "bg-gray-300"
+                }`}
+              ></div>
+            ))}
+          </div>
+        )}
 
         {/* ACTION OVERLAY */}
         <div className="absolute inset-x-4 bottom-4 flex gap-2 translate-y-20 group-hover:translate-y-0 transition-all duration-500 ease-out">
@@ -67,6 +120,7 @@ const ProductCard = ({ product }) => {
           <span className="text-[10px] font-black text-pink-600 uppercase bg-pink-50 px-2.5 py-1 rounded-full border border-pink-100 tracking-widest">
             {product.category}
           </span>
+
           {product.brand && (
             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">
               {product.brand}
@@ -98,26 +152,33 @@ const ProductCard = ({ product }) => {
                 }`}
               >
                 {item.size}
-                {item.stock === 0 && <span className="absolute w-full h-[1px] bg-gray-300 rotate-45" />}
+                {item.stock === 0 && (
+                  <span className="absolute w-full h-[1px] bg-gray-300 rotate-45" />
+                )}
               </button>
             ))}
           </div>
         )}
 
+        {/* PRICE + STATUS */}
         <div className="flex items-center justify-between mt-auto pt-5 border-t border-gray-50">
           <div className="flex flex-col">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Price</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+              Price
+            </span>
             <span className="text-xl font-black text-gray-900 tracking-tighter">
               ₹{product.price?.toLocaleString()}
             </span>
           </div>
 
           <div className="text-right">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Status</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">
+              Status
+            </span>
             <span
               className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md border ${
-                product.totalStock > 0 
-                  ? "text-emerald-600 bg-emerald-50 border-emerald-100" 
+                product.totalStock > 0
+                  ? "text-emerald-600 bg-emerald-50 border-emerald-100"
                   : "text-rose-600 bg-rose-50 border-rose-100"
               }`}
             >

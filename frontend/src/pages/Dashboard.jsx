@@ -79,14 +79,14 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tighter">Command Center</h1>
-          <p className="text-gray-400 mt-2 font-bold uppercase tracking-widest text-[10px]">Your fashion empire at a glance</p>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tighter">Store Overview</h1>
+          <p className="text-gray-400 mt-2 font-bold uppercase tracking-widest text-[10px]">Control your fashion business</p>
         </div>
         <Link 
           to="/admin/products" 
           className="bg-gray-900 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 hover:bg-black transition-all shadow-2xl active:scale-95 text-xs uppercase tracking-widest"
         >
-          <Plus size={18} strokeWidth={3} /> Post New Collection
+          <Plus size={18} strokeWidth={3} /> Add Collection
         </Link>
       </div>
 
@@ -101,21 +101,21 @@ const Dashboard = () => {
         />
         <DashboardCard 
           icon={ShoppingBag} 
-          title="Orders" 
+          title="Total Orders" 
           value={stats.orders} 
           subtext={`${stats.pendingOrders} awaiting fulfillment`}
           color="bg-pink-500 shadow-pink-100"
         />
         <DashboardCard 
           icon={Package} 
-          title="Inventory" 
+          title="Products" 
           value={stats.totalUnits} 
           subtext={`${stats.products} unique designs`}
           color="bg-amber-500 shadow-amber-100"
         />
         <DashboardCard 
           icon={Users} 
-          title="Reach" 
+          title="Visitors" 
           value={stats.products * 12} // Mock multiplier for impact
           subtext="Total store views"
           color="bg-indigo-500 shadow-indigo-100"
@@ -126,7 +126,7 @@ const Dashboard = () => {
         {/* Recent Products Table */}
         <div className="xl:col-span-2 bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-500">
           <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
-            <h3 className="text-xl font-black text-gray-900 tracking-tight">Latest Additions</h3>
+            <h3 className="text-xl font-black text-gray-900 tracking-tight">Latest Products</h3>
             <Link to="/admin/products" className="bg-white text-gray-900 px-4 py-2 border border-gray-100 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-gray-50 transition-all">
               Inventory Detail <ChevronRight size={14} />
             </Link>
@@ -180,7 +180,7 @@ const Dashboard = () => {
         <div className="space-y-8">
           <div className="bg-gray-900 p-10 rounded-[48px] text-white overflow-hidden relative shadow-2xl group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-pink-600/30 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-pink-600/40 transition-colors duration-700"></div>
-            <h3 className="text-2xl font-black mb-8 relative z-10 tracking-tight">Fast Actions</h3>
+            <h3 className="text-2xl font-black mb-8 relative z-10 tracking-tight">Quick Actions</h3>
             <div className="space-y-4 relative z-10">
               {[
                 { label: 'Create Listing', to: '/admin/products', icon: Plus, color: 'text-pink-500' },

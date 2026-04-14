@@ -24,7 +24,15 @@ export const getAllProducts = async (req, res, next) => {
     let query = {};
 
     if (!isAdmin) {
-      query.status = 'active';
+      query.isActive = true;
+    }
+
+    if (req.query.category) {
+      query.category = req.query.category;
+    }
+    
+    if (req.query.subcategory) {
+      query.subcategory = req.query.subcategory;
     }
 
     const products = await Product.find(query).sort({ createdAt: -1 });
@@ -59,7 +67,7 @@ export const getProductById = async (req, res, next) => {
 // @access  Private/Admin
 export const createProduct = async (req, res, next) => {
   try {
-    const { name, price, description, category, brand, sizeStock, colors, status } = req.body;
+    const { name, price, description, category, subcategory, brand, sizeStock, colors, status, isActive } = req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({ message: 'Name, price, and category are required' });
@@ -82,13 +90,18 @@ export const createProduct = async (req, res, next) => {
       price: parseFloat(price),
       description,
       category,
+      subcategory,
       brand,
       status: status || 'active',
+      isActive: isActive !== undefined ? isActive : true,
       sizeStock: sizeStock ? JSON.parse(sizeStock) : [],
       colors: colors ? JSON.parse(colors) : [],
       image: imageUrls[0] || '', // Use first image as thumbnail
       images: imageUrls,
     });
+
+    // Notify all clients about the new product
+    req.io.emit('product:created', product);
 
     res.status(201).json({ success: true, data: product });
   } catch (error) {
@@ -106,30 +119,48 @@ export const updateProduct = async (req, res, next) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const { name, price, description, category, brand, sizeStock, colors, status } = req.body;
+    const { name, price, description, category, subcategory, brand, sizeStock, colors, status, isActive, existingImages } = req.body;
 
+    // Handle Image Updates
+    let updatedImages = product.images;
+
+    // 1. If existingImages is provided, it means some might have been removed
+    if (existingImages) {
+      updatedImages = JSON.parse(existingImages);
+    }
+
+    // 2. Handle new uploads
     if (req.files && req.files.length > 0) {
       try {
         const uploadPromises = req.files.map(file => uploadToS3(file.buffer, file.originalname));
         const s3Results = await Promise.all(uploadPromises);
         const newImageUrls = s3Results.map(res => res.imageUrl);
-        product.images = [...product.images, ...newImageUrls];
-        if (!product.image) product.image = product.images[0];
+        updatedImages = [...updatedImages, ...newImageUrls];
       } catch (uploadError) {
         return res.status(500).json({ message: uploadError.message });
       }
     }
 
+    product.images = updatedImages;
+    // Update thumbnail if current one is mission or if we have new ones
+    product.image = updatedImages[0] || '';
+
     if (name) product.name = name;
     if (price) product.price = parseFloat(price);
     if (description) product.description = description;
     if (category) product.category = category;
+    if (subcategory) product.subcategory = subcategory;
     if (brand) product.brand = brand;
     if (status) product.status = status;
+    if (isActive !== undefined) product.isActive = isActive;
     if (sizeStock) product.sizeStock = JSON.parse(sizeStock);
     if (colors) product.colors = JSON.parse(colors);
 
     const updatedProduct = await product.save();
+
+    // Notify all clients about the updated product
+    req.io.emit('product:updated', updatedProduct);
+
     res.status(200).json({ success: true, data: updatedProduct });
   } catch (error) {
     next(error);
@@ -150,6 +181,10 @@ export const deleteProduct = async (req, res, next) => {
     // if (product.imageKey) await deleteFromS3(product.imageKey);
 
     await product.deleteOne();
+
+    // Notify all clients about the deleted product
+    req.io.emit('product:deleted', req.params.id);
+
     res.status(200).json({ message: 'Product deleted' });
   } catch (error) {
     next(error);

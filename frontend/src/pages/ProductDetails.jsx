@@ -3,21 +3,33 @@ import { useParams, Link } from 'react-router-dom';
 import { ShoppingBag, ChevronLeft, Star, Clock, ShieldCheck, Truck, ShoppingCart, ArrowRight, Minus, Plus } from 'lucide-react';
 import { getProductById } from '../services/api';
 import { useCart } from '../context/CartContext';
+import { useSocket } from '../context/SocketContext';
+import toast from 'react-hot-toast';
 
 
 
 const ProductDetails = () => {
 
   const { id } = useParams();
+  
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [selectedSize, setSelectedSize] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+const images =
+  product?.images && product.images.length > 0
+    ? product.images
+    : [product?.image];
+  
   const selectedSizeData = product?.sizeStock?.find(s => s.size === selectedSize);
   const maxStock = selectedSizeData ? selectedSizeData.stock : 0;
   
   const { addToCart } = useCart();
+
+  
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -34,6 +46,31 @@ const ProductDetails = () => {
     };
     fetchProduct();
   }, [id]);
+
+  // 🔌 Real-time Socket Listener for current product
+  const socket = useSocket();
+  useEffect(() => {
+    if (!socket || !id) return;
+
+    socket.on('product:updated', (updatedProduct) => {
+      if (updatedProduct._id === id) {
+        setProduct(updatedProduct);
+        toast.success("Product details updated live!", { icon: '✨' });
+      }
+    });
+
+    socket.on('product:deleted', (deletedId) => {
+      if (deletedId === id) {
+        toast.error("This product is no longer available.");
+        setProduct(null);
+      }
+    });
+
+    return () => {
+      socket.off('product:updated');
+      socket.off('product:deleted');
+    };
+  }, [socket, id]);
 
   useEffect(() => {
     if (qty > maxStock && maxStock > 0) {
@@ -89,20 +126,70 @@ const ProductDetails = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           {/* Image Section */}
-          <div className="space-y-6">
-            <div className="aspect-[4/5] rounded-[40px] bg-gray-50 overflow-hidden shadow-2xl relative border border-gray-100">
-              <img 
-                src={product.image} 
-                alt={product.name} 
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute top-8 left-8">
-                <span className="bg-white/80 backdrop-blur-md text-pink-600 px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-lg">
-                  {product.category}
-                </span>
-              </div>
-            </div>
-          </div>
+<div className="space-y-6">
+
+  <div className="aspect-[4/5] max-w-md mx-auto rounded-[40px] bg-gray-50 overflow-hidden shadow-2xl relative border border-gray-100">
+
+    {/* MAIN IMAGE */}
+    <img
+      src={images[currentIndex]}
+      alt={product.name}
+      className="w-full h-full object-contain transition-all duration-500"
+    />
+
+    {/* CATEGORY BADGE */}
+    <div className="absolute top-8 left-8">
+      <span className="bg-white/80 backdrop-blur-md text-pink-600 px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest shadow-lg">
+        {product.category}
+      </span>
+    </div>
+
+    {/* LEFT BUTTON */}
+    {images.length > 1 && (
+      <button
+        onClick={() =>
+          setCurrentIndex((prev) =>
+            prev === 0 ? images.length - 1 : prev - 1
+          )
+        }
+        className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow hover:bg-pink-600 hover:text-white transition"
+      >
+        ‹
+      </button>
+    )}
+
+    {/* RIGHT BUTTON */}
+    {images.length > 1 && (
+      <button
+        onClick={() =>
+          setCurrentIndex((prev) =>
+            prev === images.length - 1 ? 0 : prev + 1
+          )
+        }
+        className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow hover:bg-pink-600 hover:text-white transition"
+      >
+        ›
+      </button>
+    )}
+
+    {/* DOT INDICATORS */}
+    {images.length > 1 && (
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+        {images.map((_, index) => (
+          <div
+            key={index}
+            onClick={() => setCurrentIndex(index)}
+            className={`w-2.5 h-2.5 rounded-full cursor-pointer ${
+              currentIndex === index ? "bg-pink-600 scale-110" : "bg-gray-300"
+            }`}
+          ></div>
+        ))}
+      </div>
+    )}
+
+  </div>
+
+</div>
 
           {/* Details Section */}
           <div className="flex flex-col h-full">

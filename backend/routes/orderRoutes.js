@@ -4,6 +4,8 @@ import {
   getMyOrders,
   getOrders,
   updateOrderStatus,
+  createRazorpayOrder,
+  verifyPayment,
 } from '../controllers/orderController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -14,6 +16,9 @@ router.route('/')
   .get(protect, admin, getOrders);
 
 router.route('/myorders').get(protect, getMyOrders);
+
+router.route('/:id/pay').post(protect, createRazorpayOrder);
+router.route('/:id/verify').post(protect, verifyPayment);
 
 router.route('/:id/status').put(protect, admin, updateOrderStatus);
 

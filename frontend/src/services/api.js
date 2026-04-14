@@ -96,6 +96,28 @@ export const deleteProduct = async (id) => {
   return response.data;
 };
 
+// ============== SUBCATEGORY API CALLS ==============
+
+export const getAllSubcategories = async () => {
+  const response = await apiClient.get('/subcategories');
+  return response.data;
+};
+
+export const createSubcategory = async (data) => {
+  const response = await apiClient.post('/subcategories', data);
+  return response.data;
+};
+
+export const updateSubcategory = async (id, data) => {
+  const response = await apiClient.put(`/subcategories/${id}`, data);
+  return response.data;
+};
+
+export const deleteSubcategory = async (id) => {
+  const response = await apiClient.delete(`/subcategories/${id}`);
+  return response.data;
+};
+
 // ============== USER MANAGEMENT API CALLS ==============
 
 export const getAllUsers = async () => {
@@ -134,6 +156,43 @@ export const getOrders = async () => {
 
 export const updateOrderStatus = async (id, status) => {
   const response = await apiClient.put(`/orders/${id}/status`, { status });
+  return response.data;
+};
+
+export const getRazorpayOrderId = async (id) => {
+  const response = await apiClient.post(`/orders/${id}/pay`);
+  return response.data;
+};
+
+export const verifyPaymentServer = async (id, paymentData) => {
+  const response = await apiClient.post(`/orders/${id}/verify`, paymentData);
+  return response.data;
+};
+
+// ============== CART API CALLS ==============
+
+export const getCartServer = async () => {
+  const response = await apiClient.get('/cart');
+  return response.data;
+};
+
+export const addToCartServer = async (cartData) => {
+  const response = await apiClient.post('/cart', cartData);
+  return response.data;
+};
+
+export const syncCartServer = async (cartItems) => {
+  const response = await apiClient.post('/cart/sync', { cartItems });
+  return response.data;
+};
+
+export const removeFromCartServer = async (productId, selectedSize) => {
+  const response = await apiClient.delete(`/cart/${productId}?selectedSize=${selectedSize}`);
+  return response.data;
+};
+
+export const clearCartServer = async () => {
+  const response = await apiClient.delete('/cart');
   return response.data;
 };
 

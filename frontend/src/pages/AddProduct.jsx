@@ -1,14 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Upload, CheckCircle, AlertCircle, Loader, X, Plus, PlusCircle, 
   ChevronLeft, ChevronRight, Image as ImageIcon, Trash2, Check
 } from 'lucide-react';
-import { createProduct } from '../services/api';
-
-const DEFAULT_CATEGORIES = [
-  'Jeans', 'T-Shirts', 'Shirts', 'Formal', 'Track Pants',
-  'Sport Wear', 'Shoes', 'Watch', 'Drop Shoulder T-Shirts', 'Color T-Shirts',
-];
+import { createProduct, getAllSubcategories } from '../services/api';
 
 const SIZE_OPTIONS = {
   clothing: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
@@ -38,18 +33,20 @@ const AddProduct = () => {
     name: '',
     price: '',
     brand: '',
-    category: '',
+    category: 'Men',
+    subcategory: '',
     description: '',
     status: 'active',
   });
 
   const [sizeStock, setSizeStock] = useState([]); // [{ size: 'S', stock: 0 }]
+  const [subcategories, setSubcategories] = useState([]);
 
-  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
-  const [newCategory, setNewCategory] = useState('');
-  const [newCategorySizeType, setNewCategorySizeType] = useState('clothing');
-  const [showAddCategory, setShowAddCategory] = useState(false);
-  const [showRemoveCategory, setShowRemoveCategory] = useState(false);
+  useEffect(() => {
+    getAllSubcategories().then(data => setSubcategories(data)).catch(console.error);
+  }, []);
+
+
 
   const [selectedColors, setSelectedColors] = useState([]);
   const [customColor, setCustomColor] = useState('');
@@ -71,42 +68,7 @@ const AddProduct = () => {
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const handleAddCategory = () => {
-    const trimmed = newCategory.trim();
-    if (!trimmed) {
-      setErrorMessage('Category name cannot be empty');
-      return;
-    }
-    if (categories.includes(trimmed)) {
-      setErrorMessage('This category already exists');
-      return;
-    }
-    categoryTypeMap[trimmed] = newCategorySizeType;
-    setCategories(prev => [...prev, trimmed]);
-    setFormData(prev => ({ ...prev, category: trimmed }));
-    setSelectedSizes([]);
-    setNewCategory('');
-    setNewCategorySizeType('clothing');
-    setShowAddCategory(false);
-    setErrorMessage('');
-  };
-
-  const handleRemoveCategory = (cat) => {
-    if (DEFAULT_CATEGORIES.includes(cat)) return;
-    setCategories(prev => prev.filter(c => c !== cat));
-    if (formData.category === cat) {
-      setFormData(prev => ({ ...prev, category: '' }));
-      setSizeStock([]);
-    }
-    delete categoryTypeMap[cat];
-  };
-
-  const getEffectiveSizeType = (category) => {
-    if (categoryTypeMap[category]) return categoryTypeMap[category];
-    return getSizeType(category);
-  };
-
-  const sizeType = getEffectiveSizeType(formData.category);
+  const sizeType = getSizeType(formData.subcategory);
   const sizesToShow = SIZE_OPTIONS[sizeType] || [];
 
   const toggleSize = (size) => {
@@ -158,6 +120,20 @@ const AddProduct = () => {
     e.stopPropagation();
     const files = Array.from(e.dataTransfer?.files || []);
     processFiles(files);
+  };
+
+  const handlePaste = (e) => {
+    if (e.clipboardData?.items) {
+      const files = [];
+      for (let item of e.clipboardData.items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          files.push(item.getAsFile());
+        }
+      }
+      if (files.length > 0) {
+        processFiles(files);
+      }
+    }
   };
 
   const processFiles = (files) => {
@@ -221,8 +197,8 @@ const AddProduct = () => {
       newErrors.stock = 'At least one size with stock is required';
     }
     
-    if (!formData.category) {
-      newErrors.category = 'Category is required';
+    if (!formData.subcategory) {
+      newErrors.subcategory = 'Subcategory is required';
     }
     
     if (!formData.description?.trim()) {
@@ -253,7 +229,8 @@ const AddProduct = () => {
       formDataToSend.append('name', formData.name.trim());
       formDataToSend.append('price', parseFloat(formData.price));
       formDataToSend.append('brand', formData.brand.trim());
-      formDataToSend.append('category', formData.category);
+      formDataToSend.append('category', 'Men');
+      formDataToSend.append('subcategory', formData.subcategory);
       formDataToSend.append('description', formData.description.trim());
       formDataToSend.append('status', formData.status);
       formDataToSend.append('sizeStock', JSON.stringify(sizeStock));
@@ -272,7 +249,8 @@ const AddProduct = () => {
           name: '',
           price: '',
           brand: '',
-          category: '',
+          category: 'Men',
+          subcategory: '',
           description: '',
           status: 'active',
         });
@@ -351,7 +329,7 @@ const AddProduct = () => {
       </div>
 
       {/* Main Content */}
-      <form onSubmit={handleSubmit} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <form onSubmit={handleSubmit} onPaste={handlePaste} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           
           {/* Left Column - Form Fields */}
@@ -418,139 +396,36 @@ const AddProduct = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-black text-gray-600 uppercase tracking-wider">
-                      Category <span className="text-red-500">*</span>
+                      Subcategory <span className="text-red-500">*</span>
                     </label>
-                    <div className="flex gap-2 flex-wrap justify-end">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowAddCategory(!showAddCategory);
-                          setShowRemoveCategory(false);
-                        }}
-                        className="text-xs font-bold uppercase tracking-tight text-pink-600 hover:bg-pink-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                      >
-                        <Plus size={14} /> Add
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowRemoveCategory(!showRemoveCategory);
-                          setShowAddCategory(false);
-                        }}
-                        className="text-xs font-bold uppercase tracking-tight text-gray-400 hover:text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                      >
-                        <X size={14} /> Delete
-                      </button>
-                    </div>
                   </div>
 
                   <select
-                    name="category"
-                    value={formData.category}
+                    name="subcategory"
+                    value={formData.subcategory}
                     onChange={handleChange}
                     className={`w-full px-4 py-3.5 bg-white border rounded-xl font-medium focus:outline-none focus:ring-2 transition-all ${
-                      errors.category
+                      errors.subcategory
                         ? 'border-red-300 ring-2 ring-red-100 focus:ring-red-500 focus:border-red-500 text-red-600'
                         : 'border-gray-200 text-gray-900 focus:ring-pink-500 focus:border-pink-500 hover:border-gray-300'
                     }`}
                   >
-                    <option value="">Choose a category...</option>
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
+                    <option value="">Choose a subcategory...</option>
+                    {subcategories.map(cat => (
+                      <option key={cat._id} value={cat.name}>{cat.name}</option>
                     ))}
                   </select>
-                  {errors.category && (
+                  {errors.subcategory && (
                     <p className="text-xs font-bold text-red-500 flex items-center gap-1">
-                      <AlertCircle size={14} /> {errors.category}
+                      <AlertCircle size={14} /> {errors.subcategory}
                     </p>
                   )}
 
-                  {/* Add Category Panel */}
-                  {showAddCategory && (
-                    <div className="mt-4 p-6 bg-pink-50 rounded-2xl border-2 border-dashed border-pink-200 space-y-4 animate-in fade-in zoom-in-95 duration-300">
-                      <div className="space-y-3">
-                        <label className="block text-xs font-black text-pink-700 uppercase tracking-wider">New Category Name</label>
-                        <input
-                          type="text"
-                          value={newCategory}
-                          onChange={(e) => setNewCategory(e.target.value)}
-                          placeholder="e.g. Streetwear"
-                          className="w-full px-4 py-3.5 bg-white border border-pink-200 rounded-xl font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all placeholder:text-gray-400"
-                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCategory())}
-                        />
-                      </div>
 
-                      <div className="space-y-3">
-                        <label className="block text-xs font-black text-pink-700 uppercase tracking-wider">Size Type</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {[
-                            { value: 'clothing', label: '👕 Clothing' },
-                            { value: 'pants', label: '👖 Pants' },
-                            { value: 'shoes', label: '👟 Shoes' },
-                            { value: 'none', label: '❌ None' },
-                          ].map(opt => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() => setNewCategorySizeType(opt.value)}
-                              className={`px-4 py-2.5 rounded-lg border-2 text-xs font-bold uppercase transition-all ${
-                                newCategorySizeType === opt.value
-                                  ? 'border-pink-600 bg-pink-600 text-white shadow-lg shadow-pink-200'
-                                  : 'border-pink-100 bg-white text-pink-600 hover:border-pink-300'
-                              }`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3 pt-2">
-                        <button
-                          type="button"
-                          onClick={handleAddCategory}
-                          className="flex-1 bg-pink-600 text-white rounded-lg py-3 font-bold uppercase tracking-wider text-xs hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 active:scale-95"
-                        >
-                          Add Category
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowAddCategory(false)}
-                          className="px-6 bg-white text-gray-500 rounded-lg py-3 font-bold uppercase tracking-wider text-xs border border-pink-100 hover:bg-pink-50"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Remove Category Panel */}
-                  {showRemoveCategory && (
-                    <div className="mt-4 p-6 bg-red-50 rounded-2xl border-2 border-dashed border-red-200 animate-in fade-in zoom-in-95 duration-300">
-                      <p className="text-xs font-black text-red-600 uppercase tracking-wider mb-4">Delete Custom Categories</p>
-                      <div className="flex flex-wrap gap-2">
-                        {categories.filter(c => !DEFAULT_CATEGORIES.includes(c)).length === 0 ? (
-                          <p className="text-xs font-medium text-red-400 italic py-4">No custom categories to delete</p>
-                        ) : (
-                          categories.filter(c => !DEFAULT_CATEGORIES.includes(c)).map(cat => (
-                            <button
-                              key={cat}
-                              type="button"
-                              onClick={() => handleRemoveCategory(cat)}
-                              className="bg-white border border-red-200 rounded-lg px-4 py-2 flex items-center gap-2 text-sm font-bold text-gray-700 hover:border-red-400 hover:bg-red-50 transition-all group"
-                            >
-                              {cat}
-                              <X size={14} className="text-red-300 group-hover:text-red-500" />
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Sizes Grid */}
-                {formData.category && sizeType !== 'none' && sizesToShow.length > 0 && (
+                {formData.subcategory && sizeType !== 'none' && sizesToShow.length > 0 && (
                   <div className="space-y-4 pt-6 border-t border-gray-200">
                     <div className="flex items-center justify-between">
                       <label className="block text-xs font-black text-gray-600 uppercase tracking-wider">Available Sizes & Stock</label>

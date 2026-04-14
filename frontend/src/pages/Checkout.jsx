@@ -1,10 +1,24 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Phone, MapPin, ShoppingBag, ArrowRight, MessageSquare, ShieldCheck, ShoppingCart, Loader2 } from 'lucide-react';
-import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
-import { createOrder } from '../services/api';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  User,
+  Phone,
+  MapPin,
+  ShoppingBag,
+  ArrowRight,
+  ShieldCheck,
+  ShoppingCart,
+  Loader2,
+  CreditCard,
+} from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
+import {
+  createOrder,
+  getRazorpayOrderId,
+  verifyPaymentServer,
+} from "../services/api";
+import toast from "react-hot-toast";
 
 const Checkout = () => {
   const { cartItems, totalAmount, clearCart } = useCart();
@@ -12,31 +26,93 @@ const Checkout = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    phone: '',
-    address: '',
+    name: user?.name || "",
+    phone: "",
+    address: "",
   });
   const [loading, setLoading] = useState(false);
 
-  const ADMIN_PHONE = "8200141826"; // Replace with real phone
+  useEffect(() => {
+    // Load Razorpay script
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const initPayment = async (orderId, amount) => {
+    try {
+      const razorpayOrder = await getRazorpayOrderId(orderId);
+
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "your_razorpay_key_here",
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: "My Wearables",
+        description: "Order Payment",
+        order_id: razorpayOrder.id,
+        handler: async (response) => {
+          try {
+            setLoading(true);
+            const verifyData = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            };
+            const result = await verifyPaymentServer(orderId, verifyData);
+            if (result.status === "success") {
+              toast.success("Payment Successful!");
+              clearCart();
+              navigate(`/order-success/${orderId}`);
+            }
+          } catch (error) {
+            toast.error("Payment verification failed");
+            setLoading(false);
+          }
+        },
+        prefill: {
+          name: formData.name,
+          email: user?.email,
+          contact: formData.phone,
+        },
+        theme: {
+          color: "#db2777", // pink-600
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", (response) => {
+        toast.error("Payment failed. Please try again.");
+        setLoading(false);
+      });
+      rzp.open();
+    } catch (error) {
+      toast.error("Failed to initialize payment gateway");
+      setLoading(false);
+    }
+  };
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
+    if (cartItems.length === 0) return;
+    
     setLoading(true);
 
     try {
-      // 1. Save order to Backend
       const orderData = {
-        orderItems: cartItems.map(item => ({
+        orderItems: cartItems.map((item) => ({
           name: item.name,
           qty: item.qty,
           image: item.image,
           price: item.price,
-          product: item._id,
+          product: item._id || item.product,
           selectedSize: item.selectedSize,
         })),
         shippingAddress: formData.address,
@@ -44,54 +120,27 @@ const Checkout = () => {
         totalPrice: totalAmount,
       };
 
-      await createOrder(orderData);
-      toast.success('Order placed successfully!');
-
-      // 2. Prepare WhatsApp Message
-      const orderItemsHeader = cartItems
-        .map(
-          (item) =>
-            `- ${item.name} (Size: ${item.selectedSize || 'N/A'}) x ${item.qty} = ₹${item.price * item.qty}`
-        )
-        .join('\n');
-
-      const message = `Hello, I want to place an order:
-
-Customer Details:
-Name: ${formData.name}
-Phone: ${formData.phone}
-Address: ${formData.address}
-
-Order Items:
-${orderItemsHeader}
-
-Total Amount: ₹${totalAmount}`;
-
-      const encodedMessage = encodeURIComponent(message);
-      const whatsappUrl = `https://wa.me/${ADMIN_PHONE}?text=${encodedMessage}`;
-
-      // 3. Redirect and Cleanup
-      window.open(whatsappUrl, '_blank');
-      clearCart();
-      setLoading(false);
-      navigate('/');
+      const createdOrder = await createOrder(orderData);
+      
+      // Proceed to Razorpay
+      await initPayment(createdOrder._id, totalAmount);
     } catch (error) {
-      console.error('Order Error:', error);
-      toast.error(error.message || 'Failed to place order.');
+      console.error("Order Error:", error);
+      toast.error(error.message || "Failed to initiate order.");
       setLoading(false);
     }
   };
 
   if (cartItems.length === 0) {
-    navigate('/cart');
+    navigate("/cart");
     return null;
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 font-sans">
       <h1 className="text-4xl font-black text-gray-900 mb-10 tracking-tight flex items-center gap-4">
-        <MessageSquare className="text-pink-600 px-1 border-2 border-pink-600 rounded-lg" size={36} />
-        Complete Order
+        <CreditCard className="text-pink-600 px-1 border-2 border-pink-600 rounded-lg" size={36} />
+        Checkout
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
@@ -101,12 +150,17 @@ Total Amount: ₹${totalAmount}`;
             <User className="text-pink-600" size={24} />
             Shipping Details
           </h3>
-          
+
           <form onSubmit={handlePlaceOrder} className="space-y-6">
             <div className="space-y-1.5">
-              <label className="text-sm font-black text-gray-900 uppercase tracking-widest ml-1">Full Name</label>
+              <label className="text-sm font-black text-gray-900 uppercase tracking-widest ml-1">
+                Full Name
+              </label>
               <div className="relative">
-                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <User
+                  size={18}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type="text"
                   name="name"
@@ -120,9 +174,14 @@ Total Amount: ₹${totalAmount}`;
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-black text-gray-900 uppercase tracking-widest ml-1">Phone Number</label>
+              <label className="text-sm font-black text-gray-900 uppercase tracking-widest ml-1">
+                Phone Number
+              </label>
               <div className="relative">
-                <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Phone
+                  size={18}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                />
                 <input
                   type="tel"
                   name="phone"
@@ -136,7 +195,9 @@ Total Amount: ₹${totalAmount}`;
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-black text-gray-900 uppercase tracking-widest ml-1">Delivery Address</label>
+              <label className="text-sm font-black text-gray-900 uppercase tracking-widest ml-1">
+                Delivery Address
+              </label>
               <div className="relative">
                 <MapPin size={18} className="absolute left-4 top-6 text-gray-400" />
                 <textarea
@@ -154,17 +215,19 @@ Total Amount: ₹${totalAmount}`;
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-600 text-white font-black py-5 rounded-[24px] mt-8 flex items-center justify-center gap-3 hover:bg-green-700 transition-all active:scale-95 shadow-xl shadow-green-200 uppercase tracking-widest text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full bg-gray-900 text-white font-black py-5 rounded-[24px] mt-8 flex items-center justify-center gap-3 hover:bg-black transition-all active:scale-95 shadow-xl shadow-gray-200 uppercase tracking-widest text-sm disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {loading ? <Loader2 size={24} className="animate-spin" /> : (
+              {loading ? (
+                <Loader2 size={24} className="animate-spin" />
+              ) : (
                 <>
-                  <MessageSquare size={22} fill="currentColor" />
-                  Place Order via WhatsApp
+                  <CreditCard size={22} fill="currentColor" />
+                  Pay ₹{totalAmount} with Razorpay
                 </>
               )}
             </button>
             <p className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-              No Payment Gateway Required · Direct Order with Admin
+              Secure Encrypted Payment · Powered by Razorpay
             </p>
           </form>
         </div>
@@ -172,9 +235,8 @@ Total Amount: ₹${totalAmount}`;
         {/* Order Summary Section */}
         <div className="flex flex-col">
           <div className="bg-gray-900 p-10 rounded-[40px] text-white shadow-2xl relative overflow-hidden flex-grow">
-            {/* Decorative background circle */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-pink-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-            
+
             <h3 className="text-2xl font-black text-white mb-8 tracking-tighter flex items-center gap-3 relative z-10">
               <ShoppingCart className="text-pink-600" size={24} />
               Review Your Order
@@ -182,15 +244,22 @@ Total Amount: ₹${totalAmount}`;
 
             <div className="space-y-6 mb-12 relative z-10 overflow-y-auto max-h-[350px] pr-4 scrollbar-thin scrollbar-thumb-pink-600 scrollbar-track-white/5">
               {cartItems.map((item) => (
-                <div key={item._id} className="flex items-center gap-6 group">
+                <div key={item._id || item.product} className="flex items-center gap-6 group">
                   <div className="w-16 h-16 rounded-xl bg-white/5 overflow-hidden shrink-0 border border-white/10 group-hover:border-pink-600 transition-colors">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="flex-grow">
-                    <h4 className="font-bold text-sm tracking-tight line-clamp-1">{item.name}</h4>
-<p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">
-  SIZE: {item.selectedSize} · QTY: {item.qty} · ₹{item.price}
-</p>                  </div>
+                    <h4 className="font-bold text-sm tracking-tight line-clamp-1">
+                      {item.name}
+                    </h4>
+                    <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">
+                      SIZE: {item.selectedSize} · QTY: {item.qty} · ₹{item.price}
+                    </p>{" "}
+                  </div>
                   <div className="text-right">
                     <p className="font-black text-pink-600">₹{item.price * item.qty}</p>
                   </div>
@@ -205,20 +274,26 @@ Total Amount: ₹${totalAmount}`;
               </div>
               <div className="flex justify-between items-end">
                 <div>
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Grand Total</p>
-                  <p className="text-5xl font-black text-white tracking-tighter">₹{totalAmount}</p>
+                  <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">
+                    Grand Total
+                  </p>
+                  <p className="text-5xl font-black text-white tracking-tighter">
+                    ₹{totalAmount}
+                  </p>
                 </div>
                 <div className="bg-pink-600/20 text-pink-600 px-4 py-2 rounded-xl border border-pink-600/30 flex items-center gap-2">
                   <ShieldCheck size={18} />
-                  <span className="font-black text-xs uppercase tracking-widest">Verified</span>
+                  <span className="font-black text-xs uppercase tracking-widest">
+                    Verified
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div className="mt-8">
-            <button 
-              onClick={() => navigate('/cart')}
+            <button
+              onClick={() => navigate("/cart")}
               className="text-gray-500 font-bold hover:text-pink-600 flex items-center gap-2 transition-colors uppercase tracking-widest text-xs ml-4"
             >
               Modify Cart <ArrowRight size={14} />

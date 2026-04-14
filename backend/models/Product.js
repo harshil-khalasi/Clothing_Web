@@ -19,7 +19,10 @@ const productSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      required: [true, 'Category is required'],
+      default: 'Men',
+    },
+    subcategory: {
+      type: String,
     },
     image: {
       type: String, // Thumbnail
@@ -46,6 +49,10 @@ const productSchema = new mongoose.Schema(
       type: String,
       enum: ['active', 'inactive'],
       default: 'active',
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   {

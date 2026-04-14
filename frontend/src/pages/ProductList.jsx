@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Search, Filter, SlidersHorizontal, LayoutGrid, List, X, ChevronDown, ShoppingBag } from 'lucide-react';
 import { getAllProducts } from '../services/api';
 import ProductCard from '../components/ProductCard';
+import { useSocket } from '../context/SocketContext';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -22,13 +23,18 @@ const ProductList = () => {
         setProducts(data);
         setFilteredProducts(data);
         
-        // Dynamically get unique categories
-        const uniqueCats = ['All', ...new Set(data.map(p => p.category))];
+        // Dynamically get unique categories/subcategories
+        const uniqueCats = ['All', ...new Set(data.map(p => p.subcategory || p.category))];
         setCategories(uniqueCats);
 
         // Handle URL params
+        const subcategoryParam = searchParams.get('subcategory');
         const categoryParam = searchParams.get('category');
-        if (categoryParam) setSelectedCategory(categoryParam);
+        if (subcategoryParam) {
+          setSelectedCategory(subcategoryParam);
+        } else if (categoryParam) {
+          setSelectedCategory(categoryParam);
+        }
       } catch (err) {
         console.error('Error fetching products:', err);
       } finally {
@@ -38,12 +44,38 @@ const ProductList = () => {
     fetchProducts();
   }, [searchParams]);
 
+  // 🔌 Real-time Socket Listeners
+  const socket = useSocket();
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('product:created', (newProduct) => {
+      setProducts((prev) => [newProduct, ...prev]);
+    });
+
+    socket.on('product:updated', (updatedProduct) => {
+      setProducts((prev) => 
+        prev.map((p) => (p._id === updatedProduct._id ? updatedProduct : p))
+      );
+    });
+
+    socket.on('product:deleted', (deletedId) => {
+      setProducts((prev) => prev.filter((p) => p._id !== deletedId));
+    });
+
+    return () => {
+      socket.off('product:created');
+      socket.off('product:updated');
+      socket.off('product:deleted');
+    };
+  }, [socket]);
+
   useEffect(() => {
     let result = [...products];
 
-    // Filter by category
+    // Filter by category or subcategory
     if (selectedCategory !== 'All') {
-      result = result.filter(p => p.category === selectedCategory);
+      result = result.filter(p => p.subcategory === selectedCategory || p.category === selectedCategory);
     }
 
     // Filter by search query

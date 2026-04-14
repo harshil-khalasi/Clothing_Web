@@ -1,21 +1,25 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from '../layouts/AdminLayout';
 import UserLayout from '../layouts/UserLayout';
-import Dashboard from '../pages/Dashboard';
-import Products from '../pages/Products';
-import AddProduct from '../pages/AddProduct';
-import AdminUsers from '../pages/AdminUsers';
-import AdminOrders from '../pages/AdminOrders';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import Home from '../pages/Home';
-import ProductList from '../pages/ProductList';
-import ProductDetails from '../pages/ProductDetails';
-import Cart from '../pages/Cart';
-import Checkout from '../pages/Checkout';
-import Profile from '../pages/Profile';
 import { useAuth } from '../context/AuthContext';
+
+// 🚀 Lazy Load Pages for Performance
+const Dashboard = lazy(() => import('../pages/Dashboard'));
+const Products = lazy(() => import('../pages/Products'));
+const AddProduct = lazy(() => import('../pages/AddProduct'));
+const AdminUsers = lazy(() => import('../pages/AdminUsers'));
+const AdminOrders = lazy(() => import('../pages/AdminOrders'));
+const Login = lazy(() => import('../pages/Login'));
+const Register = lazy(() => import('../pages/Register'));
+const Home = lazy(() => import('../pages/Home'));
+const ProductList = lazy(() => import('../pages/ProductList'));
+const ProductDetails = lazy(() => import('../pages/ProductDetails'));
+const AdminSubcategories = lazy(() => import('../pages/AdminSubcategories'));
+const Cart = lazy(() => import('../pages/Cart'));
+const Checkout = lazy(() => import('../pages/Checkout'));
+const Profile = lazy(() => import('../pages/Profile'));
+const OrderSuccess = lazy(() => import('../pages/OrderSuccess'));
 
 // 🔐 Protected Route (Admin Only)
 const AdminRoute = ({ children }) => {
@@ -41,40 +45,44 @@ const Loader = () => (
 
 const AppRoutes = () => {
   return (
-    <Routes>
-      {/* 🔓 Public Routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+    <Suspense fallback={<Loader />}>
+      <Routes>
+        {/* 🔓 Public Routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-      {/* 🛍️ User Routes */}
-      <Route element={<UserLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/products" element={<ProductList />} />
-        <Route path="/product/:id" element={<ProductDetails />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<UserRoute><Checkout /></UserRoute>} />
-        <Route path="/profile" element={<UserRoute><Profile /></UserRoute>} />
-      </Route>
+        {/* 🛍️ User Routes */}
+        <Route element={<UserLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/products" element={<ProductList />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<UserRoute><Checkout /></UserRoute>} />
+          <Route path="/profile" element={<UserRoute><Profile /></UserRoute>} />
+          <Route path="/order-success/:id" element={<UserRoute><OrderSuccess /></UserRoute>} />
+        </Route>
 
-      {/* 🔒 Protected Admin Routes */}
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
-            <AdminLayout />
-          </AdminRoute>
-        }
-      >
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="products" element={<Products />} />
-        <Route path="add-product" element={<AddProduct />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="orders" element={<AdminOrders />} />
-      </Route>
+        {/* 🔒 Protected Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }
+        >
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="products" element={<Products />} />
+          <Route path="add-product" element={<AddProduct />} />
+          <Route path="subcategories" element={<AdminSubcategories />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="orders" element={<AdminOrders />} />
+        </Route>
 
-      {/* 🔁 Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* 🔁 Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 

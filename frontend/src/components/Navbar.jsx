@@ -14,7 +14,7 @@ import logo from "../assets/logo.png";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const { cartItems } = useCart();
+  const { cartCount } = useCart();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -24,10 +24,7 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "MEN", path: "/products?category=Men" },
-    { name: "WOMEN", path: "/products?category=Women" },
-    { name: "KIDS", path: "/products?category=Kids" },
-    { name: "HOME", path: "/products?category=Home" },
-    { name: "BEAUTY", path: "/products?category=Beauty" },
+    { name: "HOME", path: "/" },
   ];
 
   return (
@@ -93,24 +90,14 @@ const Navbar = () => {
               <ShoppingCart size={20} />
               <span className="text-xs">Bag</span>
 
-              {cartItems.length > 0 && (
-                <span className="absolute -top-1 right-2 bg-pink-600 text-white text-[10px] px-1.5 rounded-full">
-                  {cartItems.length}
+              {cartCount > 0 && (
+                <span className="absolute -top-1 right-2 bg-pink-600 text-white text-[10px] px-1.5 rounded-full min-w-[18px] text-center font-bold">
+                  {cartCount}
                 </span>
               )}
             </Link>
 
-            {/* ADMIN */}
-            {user?.role === "admin" && (
-              <Link
-                to="/admin/dashboard"
-                className="hidden md:flex items-center gap-1 hover:text-pink-600"
-              >
-                <LayoutDashboard size={18} />
-                Admin
-              </Link>
-            )}
-
+          
             {/* LOGOUT */}
             {user ? (
               <button
@@ -123,7 +110,7 @@ const Navbar = () => {
             ) : (
               <Link
                 to="/login"
-                className="bg-pink-600 text-white px-4 py-2 rounded-md text-sm"
+                className="bg-pink-600 text-white px-4 py-2 rounded-md text-sm font-bold uppercase tracking-widest transition-all hover:bg-pink-700 active:scale-95"
               >
                 Login
               </Link>

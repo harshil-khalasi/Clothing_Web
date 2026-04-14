@@ -1,5 +1,15 @@
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -47,15 +57,6 @@ export const addOrderItems = async (req, res, next) => {
       });
 
       const createdOrder = await order.save();
-
-      // 3. Decrement Stock
-      for (const item of orderItems) {
-        const product = await Product.findById(item.product);
-        const sizeEntry = product.sizeStock.find(s => s.size === item.selectedSize);
-        sizeEntry.stock -= item.qty;
-        await product.save();
-      }
-
       res.status(201).json(createdOrder);
     }
   } catch (error) {
@@ -105,6 +106,94 @@ export const updateOrderStatus = async (req, res, next) => {
     } else {
       res.status(404);
       throw new Error('Order not found');
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Create Razorpay Order
+// @route   POST /api/orders/:id/pay
+// @access  Private
+export const createRazorpayOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (order) {
+      const options = {
+        amount: Math.round(order.totalPrice * 100),
+        currency: 'INR',
+        receipt: `receipt_order_${order._id}`,
+      };
+
+      const razorpayOrder = await razorpay.orders.create(options);
+      
+      order.razorpayOrderId = razorpayOrder.id;
+      await order.save();
+
+      res.status(200).json(razorpayOrder);
+    } else {
+      res.status(404);
+      throw new Error('Order not found');
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify Razorpay Payment
+// @route   POST /api/orders/:id/verify
+// @access  Private
+export const verifyPayment = async (req, res, next) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = req.body;
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      res.status(404);
+      throw new Error('Order not found');
+    }
+
+    const sign = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSign = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(sign.toString())
+      .digest('hex');
+
+    if (razorpay_signature === expectedSign) {
+      // Payment verified
+      order.isPaid = true;
+      order.paidAt = Date.now();
+      order.status = 'shipped'; // Or stay pending until shipped manually
+      order.paymentResult = {
+        id: razorpay_payment_id,
+        status: 'success',
+        update_time: Date.now().toString(),
+      };
+      
+      const updatedOrder = await order.save();
+
+      // Decrement stock only after payment is verified
+      for (const item of order.orderItems) {
+        const product = await Product.findById(item.product);
+        if (product) {
+          const sizeEntry = product.sizeStock.find(s => s.size === item.selectedSize);
+          if (sizeEntry) {
+            sizeEntry.stock -= item.qty;
+            await product.save();
+          }
+        }
+      }
+
+      res.status(200).json({ status: 'success', order: updatedOrder });
+    } else {
+      res.status(400);
+      throw new Error('Invalid payment signature');
     }
   } catch (error) {
     next(error);
