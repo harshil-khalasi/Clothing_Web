@@ -76,11 +76,7 @@ const Navbar = () => {
               <span className="text-xs">Profile</span>
             </Link>
 
-            {/* Wishlist */}
-            <Link className="flex flex-col items-center text-gray-700 hover:text-pink-600">
-              <Heart size={20} />
-              <span className="text-xs">Wishlist</span>
-            </Link>
+            
 
             {/* Cart */}
             <Link

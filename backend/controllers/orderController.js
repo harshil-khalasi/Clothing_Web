@@ -57,6 +57,7 @@ export const addOrderItems = async (req, res, next) => {
       });
 
       const createdOrder = await order.save();
+      req.io.emit('order:placed', createdOrder);
       res.status(201).json(createdOrder);
     }
   } catch (error) {
@@ -102,6 +103,7 @@ export const updateOrderStatus = async (req, res, next) => {
       }
 
       const updatedOrder = await order.save();
+      req.io.emit('order:updated', updatedOrder);
       res.json(updatedOrder);
     } else {
       res.status(404);
@@ -177,6 +179,7 @@ export const verifyPayment = async (req, res, next) => {
       };
       
       const updatedOrder = await order.save();
+      req.io.emit('order:updated', updatedOrder);
 
       // Decrement stock only after payment is verified
       for (const item of order.orderItems) {

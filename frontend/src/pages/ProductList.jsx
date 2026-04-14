@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Filter, SlidersHorizontal, LayoutGrid, List, X, ChevronDown, ShoppingBag } from 'lucide-react';
-import { getAllProducts } from '../services/api';
+import { getAllProducts, getAllSubcategories } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import { useSocket } from '../context/SocketContext';
 
@@ -17,14 +17,22 @@ const ProductList = () => {
   const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const data = await getAllProducts();
-        setProducts(data);
-        setFilteredProducts(data);
+        const [productsData, subcategoriesData] = await Promise.all([
+          getAllProducts(),
+          getAllSubcategories()
+        ]);
         
-        // Dynamically get unique categories/subcategories
-        const uniqueCats = ['All', ...new Set(data.map(p => p.subcategory || p.category))];
+        setProducts(productsData);
+        setFilteredProducts(productsData);
+        
+        // Dynamically get unique categories from products (e.g. 'Men') 
+        // and combine with dynamic subcategories from API
+        const productCats = new Set(productsData.map(p => p.category).filter(Boolean));
+        const subCatNames = subcategoriesData.map(s => s.name);
+        
+        const uniqueCats = ['All', ...new Set([...productCats, ...subCatNames])];
         setCategories(uniqueCats);
 
         // Handle URL params
@@ -36,12 +44,12 @@ const ProductList = () => {
           setSelectedCategory(categoryParam);
         }
       } catch (err) {
-        console.error('Error fetching products:', err);
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchProducts();
+    fetchData();
   }, [searchParams]);
 
   // 🔌 Real-time Socket Listeners
@@ -67,8 +75,36 @@ const ProductList = () => {
       socket.off('product:created');
       socket.off('product:updated');
       socket.off('product:deleted');
+      socket.off('subcategory:created');
+      socket.off('subcategory:updated');
+      socket.off('subcategory:deleted');
     };
   }, [socket]);
+
+  // Handle re-fetching data when subcategories change
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleSubcategoryChange = () => {
+      // Re-fetch category list from API
+      getAllSubcategories().then(subcategoriesData => {
+        const productCats = new Set(products.map(p => p.category).filter(Boolean));
+        const subCatNames = subcategoriesData.map(s => s.name);
+        const uniqueCats = ['All', ...new Set([...productCats, ...subCatNames])];
+        setCategories(uniqueCats);
+      }).catch(console.error);
+    };
+
+    socket.on('subcategory:created', handleSubcategoryChange);
+    socket.on('subcategory:updated', handleSubcategoryChange);
+    socket.on('subcategory:deleted', handleSubcategoryChange);
+
+    return () => {
+      socket.off('subcategory:created', handleSubcategoryChange);
+      socket.off('subcategory:updated', handleSubcategoryChange);
+      socket.off('subcategory:deleted', handleSubcategoryChange);
+    };
+  }, [socket, products]);
 
   useEffect(() => {
     let result = [...products];

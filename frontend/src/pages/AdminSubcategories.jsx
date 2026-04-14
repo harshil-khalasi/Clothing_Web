@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getAllSubcategories, createSubcategory, updateSubcategory, deleteSubcategory } from '../services/api';
 import toast from 'react-hot-toast';
 import { Plus, Edit2, Trash2, Tag, Loader2 } from 'lucide-react';
+import { useSocket } from '../context/SocketContext';
 
 const AdminSubcategories = () => {
   const [subcategories, setSubcategories] = useState([]);
@@ -64,6 +65,30 @@ const AdminSubcategories = () => {
       }
     }
   };
+
+  // 🔌 Real-time Socket Listeners
+  const socket = useSocket();
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('subcategory:created', (newSub) => {
+      setSubcategories(prev => [...prev.filter(s => s._id !== newSub._id), newSub]);
+    });
+
+    socket.on('subcategory:updated', (updatedSub) => {
+      setSubcategories(prev => prev.map(s => s._id === updatedSub._id ? updatedSub : s));
+    });
+
+    socket.on('subcategory:deleted', (deletedId) => {
+      setSubcategories(prev => prev.filter(s => s._id !== deletedId));
+    });
+
+    return () => {
+      socket.off('subcategory:created');
+      socket.off('subcategory:updated');
+      socket.off('subcategory:deleted');
+    };
+  }, [socket]);
 
   return (
     <div className="space-y-8">

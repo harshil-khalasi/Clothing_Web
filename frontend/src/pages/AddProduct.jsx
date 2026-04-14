@@ -357,6 +357,7 @@ const AddProduct = () => {
                   step="0.01"
                   min="0"
                   value={formData.price}
+                  onWheel={(e) => e.target.blur()}  
                   onChange={handleChange}
                   error={errors.price}
                   required

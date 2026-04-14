@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { getOrders, updateOrderStatus } from '../services/api';
+import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
 
 const AdminOrders = () => {
@@ -49,6 +50,39 @@ const AdminOrders = () => {
       toast.error('Failed to update status');
     }
   };
+
+  // 🔌 Real-time Socket Listeners
+  const socket = useSocket();
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('order:placed', (newOrder) => {
+      setOrders(prev => [newOrder, ...prev]);
+      toast.success('New order received! 🛍️', { duration: 5000 });
+    });
+
+    socket.on('order:updated', (updatedOrder) => {
+      setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
+    });
+
+    // Handle product sync (if price/stock changes affect info here)
+    socket.on('product:updated', (updatedProd) => {
+      // Re-fetch to be safe if a product in an order was updated
+      // Or just map if product name changed
+      setOrders(prev => prev.map(order => ({
+        ...order,
+        orderItems: order.orderItems.map(item => 
+          item.product === updatedProd._id ? { ...item, name: updatedProd.name, image: updatedProd.image } : item
+        )
+      })));
+    });
+
+    return () => {
+      socket.off('order:placed');
+      socket.off('order:updated');
+      socket.off('product:updated');
+    };
+  }, [socket]);
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 

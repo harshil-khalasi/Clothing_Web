@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Lock, Loader2, CheckCircle, Package, History } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { updateProfile, getMyOrders } from '../services/api';
+import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
 
 const Profile = () => {
@@ -29,6 +30,21 @@ const Profile = () => {
     };
     fetchOrders();
   }, []);
+  
+  // 🔌 Real-time Socket Listeners
+  const socket = useSocket();
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('order:updated', (updatedOrder) => {
+      setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o));
+      toast.success(`Order status updated to: ${updatedOrder.status} ✨`, { duration: 5000 });
+    });
+
+    return () => {
+      socket.off('order:updated');
+    };
+  }, [socket]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -171,37 +187,70 @@ const Profile = () => {
           ) : orders.length > 0 ? (
             <div className="grid gap-6">
               {orders.map((order) => (
-                <div key={order._id} className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-pink-50/50 transition-all group border-l-4 border-l-pink-600">
-                  <div className="flex flex-col md:flex-row justify-between md:items-center gap-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs font-black text-gray-400 tracking-widest uppercase">
-                        <Package size={14} className="text-pink-500" />
-                        Order #{order._id.slice(-8).toUpperCase()}
+                <div key={order._id} className="bg-white rounded-[32px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-pink-100/20 transition-all group">
+                  {/* Order Header */}
+                  <div className="bg-gray-50/50 px-8 py-4 border-b border-gray-100 flex flex-wrap justify-between items-center gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-pink-600 shadow-sm border border-pink-50">
+                        <Package size={18} />
                       </div>
-                      <p className="text-gray-500 text-xs font-semibold">{new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                      
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        {order.orderItems.map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-2 bg-pink-50/50 px-3 py-1.5 rounded-xl border border-pink-100">
-                            <span className="text-[10px] font-black text-pink-600 bg-white w-5 h-5 flex items-center justify-center rounded-full border border-pink-200">
-                              {item.qty}
-                            </span>
-                            <span className="text-xs font-bold text-gray-700">{item.name}</span>
-                            <span className="text-[10px] font-black uppercase text-pink-400">({item.selectedSize})</span>
-                          </div>
-                        ))}
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">Order ID</p>
+                        <p className="text-sm font-black text-gray-900">#{order._id.slice(-8).toUpperCase()}</p>
                       </div>
                     </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase text-right">Placed On</p>
+                      <p className="text-sm font-bold text-gray-700">{new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    </div>
+                  </div>
 
-                    <div className="text-right flex flex-col items-end gap-3 min-w-[150px]">
-                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                        order.status === 'delivered' ? 'bg-green-50 text-green-600 border-green-100' :
-                        order.status === 'cancelled' ? 'bg-red-50 text-red-600 border-red-100' :
-                        'bg-pink-50 text-pink-600 border-pink-100'
+                  {/* Order Items */}
+                  <div className="p-8 space-y-4">
+                    {order.orderItems.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-6 group/item">
+                        <div className="w-20 h-24 bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 flex-shrink-0 group-hover/item:scale-105 transition-transform duration-500 shadow-sm">
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => e.target.src = 'https://via.placeholder.com/150'}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-lg font-black text-gray-900 tracking-tight truncate group-hover/item:text-pink-600 transition-colors">{item.name}</h4>
+                          <div className="flex flex-wrap items-center gap-3 mt-2">
+                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-gray-200">
+                              Size: {item.selectedSize}
+                            </span>
+                            <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-pink-100">
+                              Qty: {item.qty}
+                            </span>
+                          </div>
+                          <p className="text-pink-600 font-black text-lg mt-2 flex items-center gap-1">
+                            ₹{item.price.toLocaleString()}
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">per unit</span>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Order Footer */}
+                  <div className="px-8 py-6 bg-gray-50/30 border-t border-gray-50 flex flex-wrap justify-between items-center gap-6">
+                    <div className="flex items-center gap-3">
+                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border shadow-sm ${
+                        order.status === 'delivered' ? 'bg-green-600 text-white border-green-600' :
+                        order.status === 'cancelled' ? 'bg-red-600 text-white border-red-600' :
+                        order.status === 'shipped' ? 'bg-blue-600 text-white border-blue-600' :
+                        'bg-pink-600 text-white border-pink-600 animate-pulse'
                       }`}>
                         {order.status}
                       </span>
-                      <div className="text-2xl font-black text-gray-900">₹{order.totalPrice.toLocaleString()}</div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase mb-1">Total Order Value</p>
+                      <p className="text-3xl font-black text-gray-900 tracking-tighter">₹{order.totalPrice.toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
