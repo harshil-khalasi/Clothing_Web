@@ -9,9 +9,14 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    // API_BASE_URL is usually http://localhost:5000/api
-    // We need the base URL without /api for Socket.io
-    const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    // Use same dynamic logic as api.js for socket base URL
+    const getBaseUrl = () => {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      if (apiUrl) return apiUrl.replace('/api', '');
+      return `http://${window.location.hostname}:5000`;
+    };
+
+    const socketUrl = getBaseUrl();
     const newSocket = io(socketUrl, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,

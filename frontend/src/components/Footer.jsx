@@ -40,8 +40,6 @@ const Footer = () => {
             <h4 className="text-white font-bold mb-6 text-lg">Shop</h4>
             <ul className="space-y-3 text-sm">
               <li><a href="/products?category=Men" className="hover:text-pink-500 transition-colors">Men's Fashion</a></li>
-              <li><a href="/products?category=Women" className="hover:text-pink-500 transition-colors">Women's Fashion</a></li>
-              <li><a href="/products?category=Kids" className="hover:text-pink-500 transition-colors">Kids' Collection</a></li>
               <li><a href="/products" className="hover:text-pink-500 transition-colors">All Products</a></li>
             </ul>
           </div>
@@ -63,11 +61,11 @@ const Footer = () => {
             <ul className="space-y-4 text-sm">
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-pink-600 mt-0.5 shrink-0" />
-                <span>123 Fashion Street, Garment District, Mumbai, India</span>
+                <span>F-7 , Gajanan Complex, Beside Post office , Station road, Sachin, Surat 394230, Surat, Gujarat 394240</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone size={18} className="text-pink-600 shrink-0" />
-                <span>+91 98765 43210</span>
+                <span>+91 8200141826</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-pink-600 shrink-0" />

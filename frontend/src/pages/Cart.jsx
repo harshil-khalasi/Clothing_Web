@@ -89,7 +89,12 @@ const Cart = () => {
 
                     <button 
                       onClick={() => updateQty(item._id, item.selectedSize, 'inc')}
-                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-white text-gray-900 hover:text-pink-600 border border-gray-100 shadow-sm active:scale-90 transition-all font-bold"
+                      disabled={item.qty >= (item.sizeStock?.find(s => s.size === item.selectedSize)?.stock || 0)}
+                      className={`w-10 h-10 flex items-center justify-center rounded-lg bg-white text-gray-900 border border-gray-100 shadow-sm active:scale-90 transition-all font-bold ${
+                        item.qty >= (item.sizeStock?.find(s => s.size === item.selectedSize)?.stock || 0)
+                        ? "opacity-30 cursor-not-allowed text-gray-400"
+                        : "hover:text-pink-600"
+                      }`}
                     >
                       <Plus size={16} />
                     </button>

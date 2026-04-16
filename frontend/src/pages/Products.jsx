@@ -41,7 +41,6 @@ const getSizeType = (category) => {
   return 'clothing';
 };
 
-// ─── Shared number input props to block scroll & arrow key changes ────────────
 const noScrollNumberProps = {
   onWheel: (e) => e.target.blur(),
   onKeyDown: (e) => {
@@ -348,13 +347,18 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6">
+    // ✅ FIX: outer wrapper is full screen, centers the modal, allows modal to be tall
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
+      {/* Backdrop */}
       <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-md" onClick={onClose} />
 
-      <div className="relative w-full max-w-5xl bg-white rounded-[40px] shadow-2xl my-6 overflow-hidden animate-in zoom-in-95 duration-300">
+      {/* ✅ FIX: modal is relative (not fixed), flex col, max-height 100% of viewport minus padding */}
+      <div className="relative w-full max-w-5xl bg-white rounded-[40px] shadow-2xl my-6 flex flex-col animate-in zoom-in-95 duration-300"
+        style={{ maxHeight: 'calc(100vh - 3rem)' }}
+      >
 
-        {/* Modal Header */}
-        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-10 py-8 flex justify-between items-center">
+        {/* Modal Header — sticky inside the modal */}
+        <div className="flex-shrink-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-10 py-8 flex justify-between items-center rounded-t-[40px]">
           <div>
             <h3 className="text-2xl font-black text-gray-900 tracking-tight">Edit Product</h3>
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-0.5">
@@ -369,309 +373,314 @@ const EditProductModal = ({ product, onClose, onSaved }) => {
           </button>
         </div>
 
-        {/* Notifications */}
-        {successMsg && (
-          <div className="mx-10 mt-6 bg-green-50 border border-green-100 text-green-700 px-6 py-4 rounded-2xl flex items-center gap-3">
-            <CheckCircle size={20} className="flex-shrink-0" />
-            <span className="font-black text-xs uppercase tracking-widest">{successMsg}</span>
-          </div>
-        )}
-        {errorMsg && (
-          <div className="mx-10 mt-6 bg-red-50 border border-red-100 text-red-500 px-6 py-4 rounded-2xl flex items-center gap-3">
-            <AlertCircle size={20} className="flex-shrink-0" />
-            <span className="font-bold text-sm">{errorMsg}</span>
-          </div>
-        )}
+        {/* ✅ FIX: scrollable middle section */}
+        <div className="flex-1 overflow-y-auto">
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit}>
-          <div className="p-10 grid grid-cols-1 lg:grid-cols-3 gap-10">
+          {/* Notifications */}
+          {successMsg && (
+            <div className="mx-10 mt-6 bg-green-50 border border-green-100 text-green-700 px-6 py-4 rounded-2xl flex items-center gap-3">
+              <CheckCircle size={20} className="flex-shrink-0" />
+              <span className="font-black text-xs uppercase tracking-widest">{successMsg}</span>
+            </div>
+          )}
+          {errorMsg && (
+            <div className="mx-10 mt-6 bg-red-50 border border-red-100 text-red-500 px-6 py-4 rounded-2xl flex items-center gap-3">
+              <AlertCircle size={20} className="flex-shrink-0" />
+              <span className="font-bold text-sm">{errorMsg}</span>
+            </div>
+          )}
 
-            {/* LEFT COL: sticky image manager */}
-            <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-[88px] h-fit">
-              <FormSection title="Product Images" required error={errors.images}>
-                {allPreviews.length > 0 ? (
-                  <div className="space-y-4">
-                    {/* Main Preview */}
-                    <div className="relative aspect-[3/4] rounded-[28px] overflow-hidden bg-gray-50 group border border-gray-100">
-                      <img
-                        src={allPreviews[Math.min(currentImageIndex, allPreviews.length - 1)]?.src}
-                        alt="Preview"
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                      {allPreviews.length > 1 && (
-                        <>
-                          <button type="button"
-                            onClick={() => setCurrentImageIndex(i => (i - 1 + allPreviews.length) % allPreviews.length)}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
-                          ><ChevronLeft size={18} /></button>
-                          <button type="button"
-                            onClick={() => setCurrentImageIndex(i => (i + 1) % allPreviews.length)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
-                          ><ChevronRight size={18} /></button>
-                        </>
-                      )}
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/20">
-                        {Math.min(currentImageIndex, allPreviews.length - 1) + 1} / {allPreviews.length}
+          {/* Form Body */}
+          <form onSubmit={handleSubmit} id="edit-product-form">
+            <div className="p-10 grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+              {/* LEFT COL: image manager */}
+              <div className="lg:col-span-1 space-y-6 h-fit">
+                <FormSection title="Product Images" required error={errors.images}>
+                  {allPreviews.length > 0 ? (
+                    <div className="space-y-4">
+                      {/* Main Preview */}
+                      <div className="relative aspect-[3/4] rounded-[28px] overflow-hidden bg-gray-50 group border border-gray-100">
+                        <img
+                          src={allPreviews[Math.min(currentImageIndex, allPreviews.length - 1)]?.src}
+                          alt="Preview"
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                        {allPreviews.length > 1 && (
+                          <>
+                            <button type="button"
+                              onClick={() => setCurrentImageIndex(i => (i - 1 + allPreviews.length) % allPreviews.length)}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+                            ><ChevronLeft size={18} /></button>
+                            <button type="button"
+                              onClick={() => setCurrentImageIndex(i => (i + 1) % allPreviews.length)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+                            ><ChevronRight size={18} /></button>
+                          </>
+                        )}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/40 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border border-white/20">
+                          {Math.min(currentImageIndex, allPreviews.length - 1) + 1} / {allPreviews.length}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Thumbnails */}
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {allPreviews.map((item, idx) => {
-                        const isExisting = item.type === 'existing';
-                        const isRemoved = isExisting && removedExisting.has(item.src);
-                        return (
-                          <div key={idx} className="relative shrink-0 group/thumb">
-                            <button
-                              type="button"
-                              onClick={() => setCurrentImageIndex(idx)}
-                              className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 block ${idx === currentImageIndex
-                                ? 'border-pink-600 ring-4 ring-pink-50'
-                                : 'border-gray-100 opacity-60 hover:opacity-100 hover:border-pink-200'
-                                } ${isRemoved ? 'opacity-30 grayscale' : ''}`}
-                            >
-                              <img src={item.src} alt="" className="w-full h-full object-cover" />
-                            </button>
-                            {isExisting ? (
-                              isRemoved ? (
-                                <button type="button" onClick={() => handleRestoreExisting(item.src)}
-                                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-md transition-all opacity-0 group-hover/thumb:opacity-100 text-[10px] font-black"
-                                  title="Restore">↩</button>
+                      {/* Thumbnails */}
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {allPreviews.map((item, idx) => {
+                          const isExisting = item.type === 'existing';
+                          const isRemoved = isExisting && removedExisting.has(item.src);
+                          return (
+                            <div key={idx} className="relative shrink-0 group/thumb">
+                              <button
+                                type="button"
+                                onClick={() => setCurrentImageIndex(idx)}
+                                className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 block ${idx === currentImageIndex
+                                  ? 'border-pink-600 ring-4 ring-pink-50'
+                                  : 'border-gray-100 opacity-60 hover:opacity-100 hover:border-pink-200'
+                                  } ${isRemoved ? 'opacity-30 grayscale' : ''}`}
+                              >
+                                <img src={item.src} alt="" className="w-full h-full object-cover" />
+                              </button>
+                              {isExisting ? (
+                                isRemoved ? (
+                                  <button type="button" onClick={() => handleRestoreExisting(item.src)}
+                                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-md transition-all opacity-0 group-hover/thumb:opacity-100 text-[10px] font-black"
+                                    title="Restore">↩</button>
+                                ) : (
+                                  <button type="button" onClick={() => { handleRemoveExisting(item.src); if (currentImageIndex >= allPreviews.length - 1) setCurrentImageIndex(Math.max(0, allPreviews.length - 2)); }}
+                                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all opacity-0 group-hover/thumb:opacity-100"
+                                    title="Remove"><X size={10} /></button>
+                                )
                               ) : (
-                                <button type="button" onClick={() => { handleRemoveExisting(item.src); if (currentImageIndex >= allPreviews.length - 1) setCurrentImageIndex(Math.max(0, allPreviews.length - 2)); }}
+                                <button type="button"
+                                  onClick={() => { removeNewFile(idx - activeExisting.length); if (currentImageIndex >= allPreviews.length - 1) setCurrentImageIndex(Math.max(0, allPreviews.length - 2)); }}
                                   className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all opacity-0 group-hover/thumb:opacity-100"
                                   title="Remove"><X size={10} /></button>
-                              )
-                            ) : (
-                              <button type="button"
-                                onClick={() => { removeNewFile(idx - activeExisting.length); if (currentImageIndex >= allPreviews.length - 1) setCurrentImageIndex(Math.max(0, allPreviews.length - 2)); }}
-                                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all opacity-0 group-hover/thumb:opacity-100"
-                                title="Remove"><X size={10} /></button>
-                            )}
-                            {!isExisting && (
-                              <span className="absolute bottom-0 left-0 right-0 bg-pink-600 text-white text-[8px] font-black text-center uppercase leading-4">New</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="aspect-[3/4] rounded-[28px] bg-gray-50 border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-4 text-gray-300">
-                    <Camera size={40} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">No Images</span>
-                  </div>
-                )}
-
-                {/* Upload Zone */}
-                <div
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={handleDrop}
-                  className="relative h-24 rounded-2xl border-2 border-dashed border-pink-100 bg-pink-50/30 hover:bg-pink-50 hover:border-pink-400 transition-all cursor-pointer group mt-2"
-                >
-                  <input type="file" id="edit-images" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleFileSelect} className="hidden" />
-                  <label htmlFor="edit-images" className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 cursor-pointer">
-                    <Upload size={20} className="text-pink-500 group-hover:-translate-y-0.5 transition-transform" />
-                    <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest">Add More Images</span>
-                  </label>
-                </div>
-              </FormSection>
-            </div>
-
-            {/* RIGHT COL: form fields */}
-            <div className="lg:col-span-2 space-y-8">
-
-              {/* Basic Info */}
-              <FormSection title="Basic Information">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <Field label="Product Name" required error={errors.name}>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="e.g. Vintage Denim Jacket"
-                      className={fieldClass(errors.name)}
-                    />
-                  </Field>
-
-                  {/* ✅ FIX APPLIED: Price — no scroll, no arrow keys */}
-                  <Field label="Price (₹)" required error={errors.price}>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                      {...noScrollNumberProps}
-                      className={fieldClass(errors.price)}
-                    />
-                  </Field>
-
-                  {/* ✅ FIX APPLIED: Stock — no scroll, no arrow keys */}
-                  <Field label="Stock Quantity" required error={errors.stock}>
-                    <input
-                      type="number"
-                      name="stock"
-                      value={formData.stock}
-                      onChange={handleChange}
-                      min="0"
-                      placeholder="Units in inventory"
-                      {...noScrollNumberProps}
-                      className={fieldClass(errors.stock)}
-                    />
-                  </Field>
-
-                  <Field label="Brand">
-                    <input
-                      type="text"
-                      name="brand"
-                      value={formData.brand}
-                      onChange={handleChange}
-                      placeholder="e.g. US POLO"
-                      className={fieldClass(false)}
-                    />
-                  </Field>
-
-                  <Field label="Status" className="sm:col-span-2">
-                    <select name="status" value={formData.status} onChange={handleChange} className={fieldClass(false)}>
-                      <option value="active">Active Listing</option>
-                      <option value="inactive">Draft / Hidden</option>
-                    </select>
-                  </Field>
-                </div>
-              </FormSection>
-
-              {/* Category & Sizes */}
-              <FormSection title="Classification & Sizing">
-                <div className="space-y-6">
-                  <Field label="Subcategory" required error={errors.subcategory}>
-                    <div className="flex gap-3">
-                      <select name="subcategory" value={formData.subcategory} onChange={handleChange} className={`flex-1 ${fieldClass(errors.subcategory)}`}>
-                        <option value="">Choose a subcategory...</option>
-                        {subcategories.map(cat => <option key={cat._id} value={cat.name}>{cat.name}</option>)}
-                      </select>
-                    </div>
-                  </Field>
-
-                  {/* Sizes */}
-                  {formData.subcategory && sizeType !== 'none' && sizesToShow.length > 0 && (
-                    <div className="space-y-3 pt-4 border-t border-gray-100">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Available Sizes & Stock</span>
-                        <span className="text-[10px] font-black text-pink-600 bg-pink-50 px-3 py-1 rounded-full border border-pink-100">
-                          {sizeStock.length} selected
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {sizesToShow.map(size => {
-                          const itemData = sizeStock.find(s => s.size === size);
-                          const isSelected = !!itemData;
-                          return (
-                            <div key={size} className={`flex flex-col gap-2 p-2 rounded-xl border-2 transition-all ${isSelected ? 'border-pink-600 bg-pink-50/20' : 'border-gray-50 bg-white opacity-60'}`}>
-                              <button type="button" onClick={() => toggleSize(size)}
-                                className={`h-10 flex items-center justify-center rounded-lg border-2 font-black text-xs transition-all duration-300 ${isSelected ? 'border-pink-600 bg-pink-600 text-white' : 'border-gray-100 bg-white text-gray-400'}`}>
-                                {size}
-                              </button>
-                              {/* ✅ FIX APPLIED: Size stock input — no scroll, no arrow keys */}
-                              {isSelected && (
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={itemData.stock}
-                                  onChange={(e) => handleSizeStockChange(size, e.target.value)}
-                                  {...noScrollNumberProps}
-                                  className="w-full bg-white border border-pink-100 rounded-lg py-1.5 px-2 text-xs font-bold text-gray-900 focus:outline-none focus:border-pink-500"
-                                  placeholder="Qty"
-                                />
+                              )}
+                              {!isExisting && (
+                                <span className="absolute bottom-0 left-0 right-0 bg-pink-600 text-white text-[8px] font-black text-center uppercase leading-4">New</span>
                               )}
                             </div>
                           );
                         })}
                       </div>
                     </div>
-                  )}
-                </div>
-              </FormSection>
-
-              {/* Colors */}
-              <FormSection title="Color Variants">
-                <div className="space-y-5">
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {colorOptions.map(color => (
-                      <button key={color} type="button" onClick={() => toggleColor(color)}
-                        className={`h-10 flex items-center justify-center rounded-xl border-2 font-black text-[10px] uppercase transition-all duration-300 ${selectedColors.includes(color)
-                          ? 'border-pink-600 bg-pink-600 text-white shadow-md shadow-pink-200'
-                          : 'border-gray-100 bg-white text-gray-400 hover:border-pink-200 hover:text-pink-600'
-                          }`}>{color}</button>
-                    ))}
-                  </div>
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={customColor}
-                      onChange={e => setCustomColor(e.target.value)}
-                      placeholder="Add custom color..."
-                      className="flex-1 bg-gray-50 border border-gray-100 rounded-xl py-3 px-5 font-bold text-gray-900 text-sm focus:outline-none focus:ring-4 focus:ring-pink-500/10 focus:border-pink-500 placeholder:text-gray-300"
-                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddCustomColor())}
-                    />
-                    <button type="button" onClick={handleAddCustomColor}
-                      className="px-6 bg-pink-50 text-pink-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-pink-600 hover:text-white transition-all border border-pink-100">
-                      Add
-                    </button>
-                  </div>
-                  {selectedColors.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-                      {selectedColors.map(c => (
-                        <span key={c} className="text-[10px] font-black uppercase tracking-widest bg-gray-50 text-gray-500 px-3 py-1.5 rounded-full flex items-center gap-2 border border-gray-100">
-                          <span className="w-2 h-2 rounded-full bg-pink-600" />{c}
-                          <button type="button" onClick={() => toggleColor(c)} className="text-gray-300 hover:text-red-400 transition-colors">
-                            <X size={10} />
-                          </button>
-                        </span>
-                      ))}
+                  ) : (
+                    <div className="aspect-[3/4] rounded-[28px] bg-gray-50 border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-4 text-gray-300">
+                      <Camera size={40} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">No Images</span>
                     </div>
                   )}
-                </div>
-              </FormSection>
 
-              {/* Description */}
-              <FormSection title="Product Description">
-                <Field label="Description" required error={errors.description}>
-                  <textarea
-                    name="description"
-                    rows="5"
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="Describe fabric quality, fit, design details, care instructions..."
-                    className={`resize-none leading-relaxed ${fieldClass(errors.description)}`}
-                  />
-                  <div className="flex justify-between mt-1">
-                    {errors.description
-                      ? <p className="text-[10px] text-red-500 font-black uppercase tracking-widest">{errors.description}</p>
-                      : <span />}
-                    <p className="text-xs text-gray-400 font-medium text-right">{formData.description.length} chars</p>
+                  {/* Upload Zone */}
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleDrop}
+                    className="relative h-24 rounded-2xl border-2 border-dashed border-pink-100 bg-pink-50/30 hover:bg-pink-50 hover:border-pink-400 transition-all cursor-pointer group mt-2"
+                  >
+                    <input type="file" id="edit-images" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleFileSelect} className="hidden" />
+                    <label htmlFor="edit-images" className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 cursor-pointer">
+                      <Upload size={20} className="text-pink-500 group-hover:-translate-y-0.5 transition-transform" />
+                      <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest">Add More Images</span>
+                    </label>
                   </div>
-                </Field>
-              </FormSection>
-            </div>
-          </div>
+                </FormSection>
+              </div>
 
-          {/* Sticky Footer */}
-          <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-10 py-6 flex gap-4">
-            <button type="button" onClick={onClose}
-              className="flex-1 bg-gray-50 text-gray-500 font-black py-4 rounded-[20px] hover:bg-gray-100 transition-all uppercase tracking-widest text-xs border border-gray-100">
-              Cancel
-            </button>
-            <button type="submit" disabled={isSubmitting}
-              className="flex-[3] bg-pink-600 text-white font-black py-4 rounded-[20px] flex items-center justify-center gap-3 hover:bg-pink-700 transition-all shadow-xl shadow-pink-200 active:scale-[0.98] disabled:opacity-70 uppercase tracking-widest text-xs">
-              {isSubmitting ? <><Loader2 size={18} className="animate-spin" /> Saving Changes...</> : 'Save Changes'}
-            </button>
-          </div>
-        </form>
+              {/* RIGHT COL: form fields */}
+              <div className="lg:col-span-2 space-y-8">
+
+                {/* Basic Info */}
+                <FormSection title="Basic Information">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <Field label="Product Name" required error={errors.name}>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="e.g. Vintage Denim Jacket"
+                        className={fieldClass(errors.name)}
+                      />
+                    </Field>
+
+                    <Field label="Price (₹)" required error={errors.price}>
+                      <input
+                        type="number"
+                        name="price"
+                        value={formData.price}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...noScrollNumberProps}
+                        className={fieldClass(errors.price)}
+                      />
+                    </Field>
+
+                    <Field label="Stock Quantity" required error={errors.stock}>
+                      <input
+                        type="number"
+                        name="stock"
+                        value={formData.stock}
+                        onChange={handleChange}
+                        min="0"
+                        placeholder="Units in inventory"
+                        {...noScrollNumberProps}
+                        className={fieldClass(errors.stock)}
+                      />
+                    </Field>
+
+                    <Field label="Brand">
+                      <input
+                        type="text"
+                        name="brand"
+                        value={formData.brand}
+                        onChange={handleChange}
+                        placeholder="e.g. US POLO"
+                        className={fieldClass(false)}
+                      />
+                    </Field>
+
+                    <Field label="Status" className="sm:col-span-2">
+                      <select name="status" value={formData.status} onChange={handleChange} className={fieldClass(false)}>
+                        <option value="active">Active Listing</option>
+                        <option value="inactive">Draft / Hidden</option>
+                      </select>
+                    </Field>
+                  </div>
+                </FormSection>
+
+                {/* Category & Sizes */}
+                <FormSection title="Classification & Sizing">
+                  <div className="space-y-6">
+                    <Field label="Subcategory" required error={errors.subcategory}>
+                      <div className="flex gap-3">
+                        <select name="subcategory" value={formData.subcategory} onChange={handleChange} className={`flex-1 ${fieldClass(errors.subcategory)}`}>
+                          <option value="">Choose a subcategory...</option>
+                          {subcategories.map(cat => <option key={cat._id} value={cat.name}>{cat.name}</option>)}
+                        </select>
+                      </div>
+                    </Field>
+
+                    {/* Sizes */}
+                    {formData.subcategory && sizeType !== 'none' && sizesToShow.length > 0 && (
+                      <div className="space-y-3 pt-4 border-t border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Available Sizes & Stock</span>
+                          <span className="text-[10px] font-black text-pink-600 bg-pink-50 px-3 py-1 rounded-full border border-pink-100">
+                            {sizeStock.length} selected
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {sizesToShow.map(size => {
+                            const itemData = sizeStock.find(s => s.size === size);
+                            const isSelected = !!itemData;
+                            return (
+                              <div key={size} className={`flex flex-col gap-2 p-2 rounded-xl border-2 transition-all ${isSelected ? 'border-pink-600 bg-pink-50/20' : 'border-gray-50 bg-white opacity-60'}`}>
+                                <button type="button" onClick={() => toggleSize(size)}
+                                  className={`h-10 flex items-center justify-center rounded-lg border-2 font-black text-xs transition-all duration-300 ${isSelected ? 'border-pink-600 bg-pink-600 text-white' : 'border-gray-100 bg-white text-gray-400'}`}>
+                                  {size}
+                                </button>
+                                {isSelected && (
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={itemData.stock}
+                                    onChange={(e) => handleSizeStockChange(size, e.target.value)}
+                                    {...noScrollNumberProps}
+                                    className="w-full bg-white border border-pink-100 rounded-lg py-1.5 px-2 text-xs font-bold text-gray-900 focus:outline-none focus:border-pink-500"
+                                    placeholder="Qty"
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </FormSection>
+
+                {/* Colors */}
+                <FormSection title="Color Variants">
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {colorOptions.map(color => (
+                        <button key={color} type="button" onClick={() => toggleColor(color)}
+                          className={`h-10 flex items-center justify-center rounded-xl border-2 font-black text-[10px] uppercase transition-all duration-300 ${selectedColors.includes(color)
+                            ? 'border-pink-600 bg-pink-600 text-white shadow-md shadow-pink-200'
+                            : 'border-gray-100 bg-white text-gray-400 hover:border-pink-200 hover:text-pink-600'
+                            }`}>{color}</button>
+                      ))}
+                    </div>
+                    <div className="flex gap-3">
+                      <input
+                        type="text"
+                        value={customColor}
+                        onChange={e => setCustomColor(e.target.value)}
+                        placeholder="Add custom color..."
+                        className="flex-1 bg-gray-50 border border-gray-100 rounded-xl py-3 px-5 font-bold text-gray-900 text-sm focus:outline-none focus:ring-4 focus:ring-pink-500/10 focus:border-pink-500 placeholder:text-gray-300"
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddCustomColor())}
+                      />
+                      <button type="button" onClick={handleAddCustomColor}
+                        className="px-6 bg-pink-50 text-pink-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-pink-600 hover:text-white transition-all border border-pink-100">
+                        Add
+                      </button>
+                    </div>
+                    {selectedColors.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                        {selectedColors.map(c => (
+                          <span key={c} className="text-[10px] font-black uppercase tracking-widest bg-gray-50 text-gray-500 px-3 py-1.5 rounded-full flex items-center gap-2 border border-gray-100">
+                            <span className="w-2 h-2 rounded-full bg-pink-600" />{c}
+                            <button type="button" onClick={() => toggleColor(c)} className="text-gray-300 hover:text-red-400 transition-colors">
+                              <X size={10} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </FormSection>
+
+                {/* Description */}
+                <FormSection title="Product Description">
+                  <Field label="Description" required error={errors.description}>
+                    <textarea
+                      name="description"
+                      rows="5"
+                      value={formData.description}
+                      onChange={handleChange}
+                      placeholder="Describe fabric quality, fit, design details, care instructions..."
+                      className={`resize-none leading-relaxed ${fieldClass(errors.description)}`}
+                    />
+                    <div className="flex justify-between mt-1">
+                      {errors.description
+                        ? <p className="text-[10px] text-red-500 font-black uppercase tracking-widest">{errors.description}</p>
+                        : <span />}
+                      <p className="text-xs text-gray-400 font-medium text-right">{formData.description.length} chars</p>
+                    </div>
+                  </Field>
+                </FormSection>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* ✅ FIX: Sticky Footer pinned to bottom of modal, never scrolls away */}
+        <div className="flex-shrink-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-10 py-6 flex gap-4 rounded-b-[40px]">
+          <button type="button" onClick={onClose}
+            className="flex-1 bg-gray-50 text-gray-500 font-black py-4 rounded-[20px] hover:bg-gray-100 transition-all uppercase tracking-widest text-xs border border-gray-100">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="edit-product-form"
+            disabled={isSubmitting}
+            className="flex-[3] bg-pink-600 text-white font-black py-4 rounded-[20px] flex items-center justify-center gap-3 hover:bg-pink-700 transition-all shadow-xl shadow-pink-200 active:scale-[0.98] disabled:opacity-70 uppercase tracking-widest text-xs"
+          >
+            {isSubmitting ? <><Loader2 size={18} className="animate-spin" /> Saving Changes...</> : 'Save Changes'}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -71,6 +71,14 @@ export const CartProvider = ({ children }) => {
         (item) => (item._id === product._id || item.product === product._id) && item.selectedSize === selectedSize
       );
 
+      const selectedSizeData = product.sizeStock?.find(s => s.size === selectedSize);
+      const maxStock = selectedSizeData ? selectedSizeData.stock : 0;
+
+      if (existingItem && existingItem.qty >= maxStock) {
+        toast.error(`Only ${maxStock} items available in stock`);
+        return;
+      }
+
       if (user) {
         // Server call
         await addToCartServer({ productId: product._id, qty: 1, selectedSize });
@@ -136,7 +144,17 @@ export const CartProvider = ({ children }) => {
       if (!item) return;
 
       let newQty = item.qty;
-      if (action === "inc") newQty += 1;
+      const selectedSizeData = item.sizeStock?.find(s => s.size === selectedSize);
+      const maxStock = selectedSizeData ? selectedSizeData.stock : 999;
+
+      if (action === "inc") {
+        if (newQty < maxStock) {
+          newQty += 1;
+        } else {
+          toast.error(`Only ${maxStock} items available in stock`);
+          return;
+        }
+      }
       if (action === "dec" && item.qty > 1) newQty -= 1;
 
       if (newQty === item.qty) return;
