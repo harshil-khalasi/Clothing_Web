@@ -5,7 +5,23 @@ const orderSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: false,
+    },
+    customerName: {
+      type: String,
+      default: '',
+    },
+    orderType: {
+      type: String,
+      enum: ['online', 'pos'],
+      default: 'online',
+    },
+    paymentMethod: {
+      type: String,
+      default: 'Razorpay',
+    },
+    invoiceNumber: {
+      type: String,
     },
     orderItems: [
       {
@@ -59,6 +75,10 @@ const orderSchema = new mongoose.Schema(
     },
     paidAt: {
       type: Date,
+    },
+    stockDecremented: {
+      type: Boolean,
+      default: false,
     },
   },
   {

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ShoppingCart, Eye } from "lucide-react";
+import { ShoppingCart, Eye, Sparkles } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { getImageUrl, handleImageError } from "../utils/imageUtils";
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
@@ -15,40 +16,44 @@ const ProductCard = ({ product }) => {
   // IMAGE SLIDER
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const images =
+  const rawImages =
     product?.images && product.images.length > 0
       ? product.images
       : [product.image || "/no-image.png"];
 
+  const images = rawImages.map(img => getImageUrl(img));
+
   return (
     <div
-      className={`group bg-white rounded-3xl overflow-hidden 
-      border border-gray-100 
-      shadow-sm hover:shadow-2xl hover:shadow-pink-100/50
-      hover:border-pink-200
-      transition-all duration-500 
+      className={`group bg-white rounded-2xl sm:rounded-[28px] overflow-hidden 
+      border border-slate-200/80 
+      shadow-md sm:shadow-lg shadow-slate-200/40 
+      hover:shadow-[0_20px_50px_-12px_rgba(99,102,241,0.22)] 
+      hover:border-indigo-400/60 
+      transition-all duration-300 
       flex flex-col h-full relative 
-      hover:-translate-y-2
-      ${product.totalStock === 0 ? "opacity-75 grayscale-[0.5]" : ""}`}
+      hover:-translate-y-1.5
+      ${product.totalStock === 0 ? "opacity-75 grayscale-[0.3]" : ""}`}
     >
       {/* STOCK BADGE */}
       {product.totalStock === 0 ? (
-        <div className="absolute top-4 left-4 z-10 bg-gray-900/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg border border-white/10">
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 bg-slate-900/90 backdrop-blur-md text-white text-[8px] sm:text-[10px] font-black uppercase tracking-widest px-2 py-1 sm:px-3.5 sm:py-1.5 rounded-full shadow-lg border border-white/20">
           Out of Stock
         </div>
       ) : product.totalStock < 5 && (
-        <div className="absolute top-4 left-4 z-10 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg border border-white/10 animate-pulse">
-          Only {product.totalStock} left
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 bg-gradient-to-r from-rose-500 to-pink-600 text-white text-[8px] sm:text-[10px] font-black uppercase tracking-widest px-2 py-1 sm:px-3.5 sm:py-1.5 rounded-full shadow-md shadow-rose-500/30 border border-white/30 flex items-center gap-0.5 sm:gap-1 animate-pulse">
+          <Sparkles size={10} /> Only {product.totalStock} left
         </div>
       )}
 
       {/* IMAGE SLIDER */}
-      <div className="relative w-full aspect-[3/4] bg-gray-50 flex items-center justify-center overflow-hidden group-hover:bg-white transition-colors duration-500">
+      <div className="relative w-full aspect-[4/5] bg-slate-50 flex items-center justify-center overflow-hidden group-hover:bg-slate-100/50 transition-colors duration-500">
         
         <img
           src={images[currentIndex]}
           alt={product.name}
-          className="w-full h-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
+          onError={handleImageError}
+          className="w-full h-full object-cover p-1 sm:p-3 transition-transform duration-700 group-hover:scale-105"
         />
 
         {/* LEFT BUTTON */}
@@ -59,7 +64,7 @@ const ProductCard = ({ product }) => {
                 prev === 0 ? images.length - 1 : prev - 1
               )
             }
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow hover:bg-pink-600 hover:text-white transition"
+            className="absolute left-1.5 sm:left-2.5 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md text-slate-800 p-1 sm:p-2 rounded-full shadow-md hover:bg-indigo-600 hover:text-white transition-all duration-300 z-10 text-xs sm:text-base"
           >
             ‹
           </button>
@@ -73,7 +78,7 @@ const ProductCard = ({ product }) => {
                 prev === images.length - 1 ? 0 : prev + 1
               )
             }
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md p-2 rounded-full shadow hover:bg-pink-600 hover:text-white transition"
+            className="absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md text-slate-800 p-1 sm:p-2 rounded-full shadow-md hover:bg-indigo-600 hover:text-white transition-all duration-300 z-10 text-xs sm:text-base"
           >
             ›
           </button>
@@ -81,25 +86,25 @@ const ProductCard = ({ product }) => {
 
         {/* DOTS */}
         {images.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 flex gap-1 sm:gap-1.5 z-10">
             {images.map((_, index) => (
               <div
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full cursor-pointer ${
-                  currentIndex === index ? "bg-pink-600" : "bg-gray-300"
+                className={`h-1 sm:h-1.5 rounded-full cursor-pointer transition-all duration-300 ${
+                  currentIndex === index ? "w-3 sm:w-5 bg-indigo-600 shadow-sm" : "w-1 sm:w-1.5 bg-slate-300"
                 }`}
               ></div>
             ))}
           </div>
         )}
 
-        {/* ACTION OVERLAY */}
-        <div className="absolute inset-x-4 bottom-4 flex gap-2 translate-y-20 group-hover:translate-y-0 transition-all duration-500 ease-out">
+        {/* ACTION OVERLAY (Desktop hover) */}
+        <div className="hidden md:flex absolute inset-x-4 bottom-4 gap-2.5 translate-y-24 group-hover:translate-y-0 transition-all duration-500 ease-out z-20">
           <button
             onClick={() => addToCart(product, selectedSize)}
             disabled={product.totalStock === 0 || !selectedSize}
-            className="flex-1 bg-white text-gray-900 font-bold py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-pink-600 hover:text-white transition-all shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-wider"
+            className="flex-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-extrabold py-3.5 rounded-2xl flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-indigo-500/40 hover:brightness-110 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-wider shadow-md"
           >
             <ShoppingCart size={16} />
             Add to Bag
@@ -107,7 +112,7 @@ const ProductCard = ({ product }) => {
 
           <Link
             to={`/product/${product._id}`}
-            className="w-12 h-12 bg-white flex items-center justify-center rounded-2xl hover:bg-pink-600 hover:text-white transition-all shadow-xl active:scale-95 text-gray-900"
+            className="w-12 h-12 bg-white/90 backdrop-blur-xl border border-slate-200 flex items-center justify-center rounded-2xl hover:bg-slate-950 hover:text-white transition-all duration-300 shadow-lg active:scale-95 text-slate-800 shrink-0"
           >
             <Eye size={18} />
           </Link>
@@ -115,74 +120,92 @@ const ProductCard = ({ product }) => {
       </div>
 
       {/* CONTENT */}
-      <div className="p-6 flex flex-col flex-grow">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-black text-pink-600 uppercase bg-pink-50 px-2.5 py-1 rounded-full border border-pink-100 tracking-widest">
+      <div className="p-2.5 sm:p-5 flex flex-col flex-grow">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[8px] sm:text-[9px] font-black text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 tracking-widest line-clamp-1">
             {product.category}
           </span>
 
           {product.brand && (
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">
+            <span className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest italic line-clamp-1 ml-1">
               {product.brand}
             </span>
           )}
         </div>
 
         <Link to={`/product/${product._id}`}>
-          <h3 className="text-base font-black text-gray-900 hover:text-pink-600 transition-colors line-clamp-1 mt-1 tracking-tight">
+          <h3 className="text-xs sm:text-base font-black text-slate-900 hover:text-indigo-600 transition-colors line-clamp-1 mt-0.5 tracking-tight">
             {product.name}
           </h3>
         </Link>
 
         {/* SIZE SELECTOR */}
         {product?.sizeStock?.length > 0 && (
-          <div className="flex gap-1.5 mt-4 flex-wrap">
+          <div className="flex gap-1 mt-2 sm:mt-3 flex-wrap">
             {product.sizeStock.map((item, index) => (
               <button
                 key={index}
                 onClick={() => item.stock > 0 && setSelectedSize(item.size)}
                 disabled={item.stock === 0}
-                className={`w-9 h-9 text-[10px] font-black border-2 rounded-xl transition-all duration-300 flex items-center justify-center
+                className={`w-6 h-6 sm:w-9 sm:h-9 text-[9px] sm:text-[10px] font-extrabold rounded-lg sm:rounded-xl transition-all duration-300 flex items-center justify-center
                 ${
                   selectedSize === item.size
-                    ? "bg-pink-600 text-white border-pink-600 shadow-lg shadow-pink-100 scale-110"
+                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-sm scale-105"
                     : item.stock > 0
-                    ? "bg-white text-gray-700 border-gray-100 hover:border-pink-500 hover:text-pink-600"
-                    : "bg-gray-50 text-gray-300 border-gray-50 cursor-not-allowed opacity-50 overflow-hidden relative"
+                    ? "bg-slate-50 text-slate-700 border border-slate-200 hover:border-indigo-500"
+                    : "bg-slate-50 text-slate-300 border border-slate-100 cursor-not-allowed opacity-50 overflow-hidden relative"
                 }`}
               >
                 {item.size}
                 {item.stock === 0 && (
-                  <span className="absolute w-full h-[1px] bg-gray-300 rotate-45" />
+                  <span className="absolute w-full h-[1px] bg-slate-300 rotate-45" />
                 )}
               </button>
             ))}
           </div>
         )}
 
+        {/* MOBILE ADD TO CART BUTTON */}
+        <div className="flex md:hidden items-center gap-1.5 mt-2.5">
+          <button
+            onClick={() => addToCart(product, selectedSize)}
+            disabled={product.totalStock === 0 || !selectedSize}
+            className="flex-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-black py-1.5 sm:py-2 rounded-lg flex items-center justify-center gap-1 active:scale-95 disabled:opacity-50 text-[10px] uppercase tracking-wider shadow-sm"
+          >
+            <ShoppingCart size={12} />
+            {product.totalStock === 0 ? "Out" : "Add"}
+          </button>
+          <Link
+            to={`/product/${product._id}`}
+            className="w-7 h-7 bg-slate-100 border border-slate-200 flex items-center justify-center rounded-lg text-slate-700 shrink-0"
+          >
+            <Eye size={13} />
+          </Link>
+        </div>
+
         {/* PRICE + STATUS */}
-        <div className="flex items-center justify-between mt-auto pt-5 border-t border-gray-50">
+        <div className="flex items-center justify-between mt-auto pt-2.5 sm:pt-4 border-t border-slate-100">
           <div className="flex flex-col">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+            <span className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
               Price
             </span>
-            <span className="text-xl font-black text-gray-900 tracking-tighter">
+            <span className="text-sm sm:text-xl font-black text-slate-900 tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-700">
               ₹{product.price?.toLocaleString()}
             </span>
           </div>
 
           <div className="text-right">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">
+            <span className="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5 block">
               Status
             </span>
             <span
-              className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md border ${
+              className={`text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-1.5 sm:px-2.5 py-0.5 rounded-full border ${
                 product.totalStock > 0
-                  ? "text-emerald-600 bg-emerald-50 border-emerald-100"
-                  : "text-rose-600 bg-rose-50 border-rose-100"
+                  ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                  : "text-slate-400 bg-slate-50 border-slate-200"
               }`}
             >
-              {product.totalStock > 0 ? "In Stock" : "Sold Out"}
+              {product.totalStock > 0 ? "In Stock" : "Sold"}
             </span>
           </div>
         </div>

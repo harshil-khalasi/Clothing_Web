@@ -2,6 +2,9 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import productRoutes from './routes/productRoutes.js';
@@ -13,6 +16,15 @@ import subcategoryRoutes from './routes/subcategoryRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure public/invoices folder exists
+const invoicesDir = path.join(__dirname, 'public/invoices');
+if (!fs.existsSync(invoicesDir)) {
+  fs.mkdirSync(invoicesDir, { recursive: true });
+}
 
 const app = express();
 const httpServer = createServer(app);
@@ -41,6 +53,15 @@ const io = new Server(httpServer, {
 });
 
 const PORT = process.env.PORT || 5000;
+
+// Serve static invoice PDF files and product upload files
+app.use('/invoices', express.static(path.join(__dirname, 'public/invoices')));
+
+const uploadsDir = path.join(__dirname, 'public/uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsDir));
 
 // Middleware
 app.use(cors({

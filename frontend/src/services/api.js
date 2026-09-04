@@ -150,6 +150,21 @@ export const createOrder = async (orderData) => {
   return response.data;
 };
 
+export const createPosOrder = async (posOrderData) => {
+  const response = await apiClient.post('/orders/pos', posOrderData);
+  return response.data;
+};
+
+export const confirmPosStock = async (id) => {
+  const response = await apiClient.post(`/orders/${id}/confirm-pos`);
+  return response.data;
+};
+
+export const getOrderById = async (id) => {
+  const response = await apiClient.get(`/orders/${id}`);
+  return response.data;
+};
+
 export const getMyOrders = async () => {
   const response = await apiClient.get('/orders/myorders');
   return response.data;
@@ -157,6 +172,11 @@ export const getMyOrders = async () => {
 
 export const getOrders = async () => {
   const response = await apiClient.get('/orders');
+  return response.data;
+};
+
+export const getUserOrders = async (userId) => {
+  const response = await apiClient.get(`/orders/user/${userId}`);
   return response.data;
 };
 

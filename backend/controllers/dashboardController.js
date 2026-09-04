@@ -31,6 +31,11 @@ export const getDashboardStats = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .limit(5);
 
+    const recentOrders = await Order.find()
+      .populate('user', 'name email phoneNumber')
+      .sort({ createdAt: -1 })
+      .limit(8);
+
     // Category breakdown
     const categoryData = await Product.aggregate([
       { $group: { _id: '$category', count: { $sum: 1 } } },
@@ -49,6 +54,7 @@ export const getDashboardStats = async (req, res, next) => {
         pendingOrders,
         totalStockUnits,
         recentProducts,
+        recentOrders,
         categoryData,
       },
     });

@@ -716,6 +716,8 @@ const fieldClass = (hasError) =>
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
 
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
+
 const AdminProductCard = ({ product, onEdit, onDelete }) => (
   <div className="group bg-white rounded-2xl border border-gray-200
   shadow-md hover:shadow-2xl hover:shadow-pink-100
@@ -724,8 +726,9 @@ const AdminProductCard = ({ product, onEdit, onDelete }) => (
 
     <div className="relative aspect-[4/5] bg-gray-100 flex items-center justify-center border-b">
       <img
-        src={product.image || "/no-image.png"}
+        src={getImageUrl(product.image || (product.images && product.images[0]) || "/no-image.png")}
         alt={product.name}
+        onError={handleImageError}
         className="w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-105"
       />
       <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-bold uppercase ${product.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'}`}>

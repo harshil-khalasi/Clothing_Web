@@ -20,6 +20,7 @@ const Cart = lazy(() => import('../pages/Cart'));
 const Checkout = lazy(() => import('../pages/Checkout'));
 const Profile = lazy(() => import('../pages/Profile'));
 const OrderSuccess = lazy(() => import('../pages/OrderSuccess'));
+const AdminPos = lazy(() => import('../pages/AdminPos'));
 
 // 🔐 Protected Route (Admin Only)
 const AdminRoute = ({ children }) => {
@@ -39,7 +40,7 @@ const UserRoute = ({ children }) => {
 
 const Loader = () => (
   <div className="min-h-screen flex items-center justify-center bg-white">
-    <div className="w-12 h-12 border-4 border-pink-600 border-t-transparent rounded-full animate-spin"></div>
+    <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
   </div>
 );
 
@@ -74,6 +75,7 @@ const AppRoutes = () => {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="products" element={<Products />} />
           <Route path="add-product" element={<AddProduct />} />
+          <Route path="pos" element={<AdminPos />} />
           <Route path="subcategories" element={<AdminSubcategories />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="orders" element={<AdminOrders />} />

@@ -34,13 +34,15 @@ export const CartProvider = ({ children }) => {
         
         const dbCart = await getCartServer();
         // Backend returns array of { product: { ... }, qty, selectedSize }
-        // Flatten for frontend state
-        const formattedCart = dbCart.map(item => ({
-          ...item.product,
-          qty: item.qty,
-          selectedSize: item.selectedSize,
-          product: item.product._id // maintain consistency
-        }));
+        // Flatten for frontend state safely filtering deleted/null products
+        const formattedCart = (dbCart || [])
+          .filter(item => item && item.product)
+          .map(item => ({
+            ...item.product,
+            qty: item.qty,
+            selectedSize: item.selectedSize,
+            product: item.product._id // maintain consistency
+          }));
         setCartItems(formattedCart);
       } else {
         // Guest: Use local storage
@@ -85,12 +87,14 @@ export const CartProvider = ({ children }) => {
         
         // Optimistic refresh
         const dbCart = await getCartServer();
-        const formattedCart = dbCart.map(item => ({
-          ...item.product,
-          qty: item.qty,
-          selectedSize: item.selectedSize,
-          product: item.product._id
-        }));
+        const formattedCart = (dbCart || [])
+          .filter(item => item && item.product)
+          .map(item => ({
+            ...item.product,
+            qty: item.qty,
+            selectedSize: item.selectedSize,
+            product: item.product._id
+          }));
         setCartItems(formattedCart);
       } else {
         // Guest local update
@@ -116,12 +120,14 @@ export const CartProvider = ({ children }) => {
       if (user) {
         await removeFromCartServer(productId, selectedSize);
         const dbCart = await getCartServer();
-        const formattedCart = dbCart.map(item => ({
-          ...item.product,
-          qty: item.qty,
-          selectedSize: item.selectedSize,
-          product: item.product._id
-        }));
+        const formattedCart = (dbCart || [])
+          .filter(item => item && item.product)
+          .map(item => ({
+            ...item.product,
+            qty: item.qty,
+            selectedSize: item.selectedSize,
+            product: item.product._id
+          }));
         setCartItems(formattedCart);
       } else {
         setCartItems((prevItems) =>

@@ -4,6 +4,7 @@ import { ShoppingBasket, Mail, ArrowLeft, Loader2, CheckCircle } from 'lucide-re
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Card from '../components/Card';
+import logo from '../assets/logo.png';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -30,17 +31,15 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-pink-50 flex items-center justify-center p-4 font-sans">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center bg-pink-600 p-3 rounded-2xl text-white mb-4 shadow-xl shadow-pink-200">
-            <ShoppingBasket size={32} />
-          </div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tighter">KART ADMIN</h1>
+          <img src={logo} alt="My Wearables Logo" className="w-16 h-16 object-contain mx-auto mb-4" />
+          <h1 className="text-4xl font-black text-gray-900 tracking-tighter">MY WEARABLES ADMIN</h1>
           <p className="text-gray-500 mt-2 font-medium">Reset your password to regain access.</p>
         </div>
 
-        <Card className="shadow-2xl shadow-pink-100 border-none p-8">
+        <Card className="shadow-2xl shadow-gray-200 border border-gray-200 p-8">
           {!isSuccess ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="text-center mb-4">
@@ -51,7 +50,7 @@ const ForgotPassword = () => {
               </div>
 
               {error && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-bold border border-red-100">
+                <div className="bg-gray-100 text-gray-900 p-4 rounded-xl text-sm font-bold border border-gray-300">
                   {error}
                 </div>
               )}
@@ -61,7 +60,7 @@ const ForgotPassword = () => {
                 <Input
                   label="Email Address"
                   type="email"
-                  placeholder="admin@kart.com"
+                  placeholder="admin@mywearables.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
@@ -71,7 +70,7 @@ const ForgotPassword = () => {
 
               <Button 
                 type="submit" 
-                className="w-full py-4 text-lg shadow-lg shadow-pink-200"
+                className="w-full py-4 text-lg shadow-lg shadow-black/10 bg-black hover:bg-gray-800 text-white"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -85,14 +84,14 @@ const ForgotPassword = () => {
 
               <Link 
                 to="/login" 
-                className="flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-pink-600 transition-colors"
+                className="flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-black transition-colors"
               >
                 <ArrowLeft size={16} /> Back to Login
               </Link>
             </form>
           ) : (
             <div className="text-center space-y-6 py-4">
-              <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto text-green-600">
+              <div className="bg-black w-20 h-20 rounded-full flex items-center justify-center mx-auto text-white">
                 <CheckCircle size={48} />
               </div>
               <div>

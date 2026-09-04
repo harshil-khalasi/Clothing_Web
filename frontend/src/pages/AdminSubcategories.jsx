@@ -92,12 +92,7 @@ const AdminSubcategories = () => {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Manage Subcategories</h1>
-        <p className="text-gray-500 font-medium italic mt-2">Create and organize product subcategories</p>
-      </div>
-
-      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 max-w-xl">
+      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200 mb-8 max-w-xl">
         <form onSubmit={handleSubmit} className="flex gap-4">
           <div className="flex-1 relative">
             <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -106,13 +101,13 @@ const AdminSubcategories = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Shirts, Hoodies..."
-              className="w-full bg-gray-50 border border-transparent rounded-2xl py-3 pl-12 pr-4 focus:bg-white focus:ring-4 focus:ring-pink-500/10 focus:border-pink-500 transition-all font-bold text-gray-900"
+              className="w-full bg-gray-50 border border-gray-200 rounded-2xl py-3 pl-12 pr-4 focus:bg-white focus:ring-4 focus:ring-black/10 focus:border-black transition-all font-bold text-gray-900"
             />
           </div>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="bg-pink-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-pink-700 transition"
+            className="bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 hover:bg-gray-800 transition"
           >
             {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : editId ? <Edit2 size={18} /> : <Plus size={18} />}
             {editId ? 'Update' : 'Add'}
@@ -131,26 +126,26 @@ const AdminSubcategories = () => {
 
       {loading ? (
         <div className="flex justify-center p-12">
-          <Loader2 className="animate-spin text-pink-600" size={40} />
+          <Loader2 className="animate-spin text-black" size={40} />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {subcategories.map(sub => (
-            <div key={sub._id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-lg transition">
+            <div key={sub._id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200 flex items-center justify-between group hover:shadow-lg transition">
               <div>
                 <h3 className="font-bold text-gray-900 text-lg">{sub.name}</h3>
                 <p className="text-xs text-gray-400 font-medium">Created: {new Date(sub.createdAt).toLocaleDateString()}</p>
               </div>
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleEdit(sub)}
-                  className="w-10 h-10 bg-amber-50 text-amber-600 flex items-center justify-center rounded-xl hover:bg-amber-100 transition"
+                  className="w-10 h-10 bg-gray-100 text-gray-700 flex items-center justify-center rounded-xl hover:bg-black hover:text-white transition"
                 >
                   <Edit2 size={16} />
                 </button>
                 <button
                   onClick={() => handleDelete(sub._id)}
-                  className="w-10 h-10 bg-red-50 text-red-600 flex items-center justify-center rounded-xl hover:bg-red-100 transition"
+                  className="w-10 h-10 bg-gray-100 text-gray-700 flex items-center justify-center rounded-xl hover:bg-black hover:text-white transition"
                 >
                   <Trash2 size={16} />
                 </button>

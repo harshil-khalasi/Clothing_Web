@@ -1,50 +1,60 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import crypto from "crypto";
-import dotenv from "dotenv";
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.join(__dirname, '../public/uploads');
 
-// Generate filename
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Generate unique filename
 const generateFileName = (originalName) => {
-  const randomName = crypto.randomBytes(16).toString("hex");
-  const ext = originalName.split(".").pop();
-  return `products/${Date.now()}-${randomName}.${ext}`;
+  const randomName = crypto.randomBytes(16).toString('hex');
+  const ext = (originalName || 'jpg').split('.').pop();
+  return `${Date.now()}-${randomName}.${ext}`;
 };
 
-// Upload
+/**
+ * Saves uploaded file locally when AWS S3 is closed or unavailable.
+ */
 export const uploadToS3 = async (fileBuffer, fileName) => {
-  const key = generateFileName(fileName);
+  try {
+    const uniqueName = generateFileName(fileName);
+    const filePath = path.join(uploadsDir, uniqueName);
 
-  const command = new PutObjectCommand({
-    Bucket: process.env.AWS_BUCKET_NAME,
-    Key: key,
-    Body: fileBuffer,
-    ContentType: `image/${fileName.split(".").pop()}`,
-  });
+    // Write file to local public/uploads directory
+    await fs.promises.writeFile(filePath, fileBuffer);
 
-  await s3.send(command);
+    const imageUrl = `/uploads/${uniqueName}`;
 
-  const imageUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-
-  return { imageUrl, imageKey: key };
+    return { imageUrl, imageKey: uniqueName };
+  } catch (error) {
+    console.error('Error saving image locally:', error);
+    throw new Error(`Local file upload failed: ${error.message}`);
+  }
 };
 
-// Delete
+/**
+ * Deletes file from local storage.
+ */
 export const deleteFromS3 = async (key) => {
-  const command = new DeleteObjectCommand({
-    Bucket: process.env.AWS_BUCKET_NAME,
-    Key: key,
-  });
-
-  await s3.send(command);
-
-  return { success: true };
+  try {
+    if (!key) return { success: true };
+    const fileName = path.basename(key);
+    const filePath = path.join(uploadsDir, fileName);
+    if (fs.existsSync(filePath)) {
+      await fs.promises.unlink(filePath);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting local file:', error);
+    return { success: false };
+  }
 };
