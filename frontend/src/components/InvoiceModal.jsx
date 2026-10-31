@@ -29,12 +29,18 @@ const InvoiceModal = ({ order, onClose }) => {
   const handleDownloadPDF = async () => {
     const filename = `Invoice_${order.invoiceNumber || order._id?.slice(-8).toUpperCase() || 'Bill'}.pdf`;
 
+    const getBackendUrl = () => {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      if (apiUrl) return apiUrl.replace(/\/api\/?$/, '');
+      return `${window.location.protocol}//${window.location.hostname}:5000`;
+    };
+
     try {
       setGeneratingPdf(true);
       toast.loading('Generating PDF Invoice...', { id: 'pdf-toast' });
 
       // Stream native PDF from backend PDFKit service (100% bug-free)
-      const pdfEndpoint = `${window.location.protocol}//${window.location.hostname}:5000/api/orders/${order._id}/pdf`;
+      const pdfEndpoint = `${getBackendUrl()}/api/orders/${order._id}/pdf`;
       const response = await fetch(pdfEndpoint);
       if (!response.ok) {
         throw new Error('Failed to generate PDF on server');
@@ -82,8 +88,14 @@ const InvoiceModal = ({ order, onClose }) => {
       setGeneratingPdf(true);
       toast.loading('Preparing PDF Invoice...', { id: 'pdf-toast' });
 
+      const getBackendUrl = () => {
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+        if (apiUrl) return apiUrl.replace(/\/api\/?$/, '');
+        return `${window.location.protocol}//${window.location.hostname}:5000`;
+      };
+
       // Fetch server-generated native PDF Blob
-      const pdfEndpoint = `${window.location.protocol}//${window.location.hostname}:5000/api/orders/${order._id}/pdf`;
+      const pdfEndpoint = `${getBackendUrl()}/api/orders/${order._id}/pdf`;
       const response = await fetch(pdfEndpoint);
       if (!response.ok) {
         throw new Error('Failed to generate PDF on server');
@@ -121,7 +133,7 @@ const InvoiceModal = ({ order, onClose }) => {
         document.body.removeChild(link);
         URL.revokeObjectURL(downloadUrl);
 
-        const pdfUrl = `${window.location.protocol}//${window.location.hostname}:5000/invoices/${invoiceNo}.pdf`;
+        const pdfUrl = `${getBackendUrl()}/invoices/${invoiceNo}.pdf`;
 
         const message = 
 `🛍️ *MY WEARABLES - OFFICIAL TAX INVOICE*

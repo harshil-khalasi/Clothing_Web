@@ -28,6 +28,15 @@ import { getAllUsers, deleteUser, getUserOrders, getOrders, updateOrderStatus } 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const getPdfUrl = (orderId) => {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    if (apiUrl) {
+      const base = apiUrl.replace(/\/api\/?$/, '');
+      return `${base}/api/orders/${orderId}/pdf`;
+    }
+    return `http://${window.location.hostname}:5000/api/orders/${orderId}/pdf`;
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleting, setIsDeleting] = useState(null);
 
@@ -325,7 +334,7 @@ const AdminUsers = () => {
                                         <div className="flex items-center gap-2">
                                           {getStatusBadge(ord.status)}
                                           <a
-                                            href={`http://${window.location.hostname}:5000/api/orders/${ord._id}/pdf`}
+                                            href={getPdfUrl(ord._id)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="px-2.5 py-1 rounded-lg bg-slate-900 text-white font-extrabold text-[11px] flex items-center gap-1 hover:bg-indigo-600 transition-colors"
@@ -499,7 +508,7 @@ const AdminUsers = () => {
                               </select>
                             </div>
                             <a
-                              href={`http://${window.location.hostname}:5000/api/orders/${order._id}/pdf`}
+                              href={getPdfUrl(order._id)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="px-3 py-1 rounded-xl bg-slate-900 text-white hover:bg-indigo-600 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"

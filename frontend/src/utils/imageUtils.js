@@ -15,17 +15,24 @@ export const getImageUrl = (url) => {
 
   let finalUrl = url;
 
-  // Replace hardcoded localhost with the actual hostname (crucial for mobile testing on LAN)
-  if (finalUrl.includes('localhost:5000')) {
+  const getBackendBase = () => {
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    if (apiUrl) return apiUrl.replace(/\/api\/?$/, '');
     const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-    finalUrl = finalUrl.replace('localhost', currentHost);
+    return `http://${currentHost}:5000`;
+  };
+
+  const backendBase = getBackendBase();
+
+  // Replace hardcoded localhost:5000 with the actual backend base URL
+  if (finalUrl.includes('localhost:5000')) {
+    finalUrl = finalUrl.replace(/https?:\/\/localhost:5000/, backendBase);
   }
 
   // If it's a relative uploads path
   if (finalUrl.startsWith('/uploads') || finalUrl.startsWith('uploads/')) {
-    const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
     const cleanPath = finalUrl.startsWith('/') ? finalUrl : `/${finalUrl}`;
-    finalUrl = `http://${currentHost}:5000${cleanPath}`;
+    finalUrl = `${backendBase}${cleanPath}`;
   }
 
   return finalUrl;
